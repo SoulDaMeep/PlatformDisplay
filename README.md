@@ -1,7 +1,5 @@
 # PlatformDisplay
 
-# PlatformDisplay
-
 plugin id: 376
 
 I will come back to this plugin to make it more user friendly, also fixing any bugs that might appear through the journey of this plugin. Please notify me if there is any bugs on Discord: SOul#7423
