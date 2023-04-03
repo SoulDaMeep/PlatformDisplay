@@ -28,7 +28,6 @@ class PlatformDisplay :
 	std::shared_ptr<bool> enabled;
 
 	virtual void onLoad();
-	virtual void onUnload();
 
 	void RenderSettings() override;
 	std::string GetPluginName() override;
