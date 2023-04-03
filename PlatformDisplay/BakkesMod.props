@@ -15,12 +15,6 @@
     <PostBuildEvent>
       <Command> "$(BakkesModPath)\bakkesmodsdk\bakkesmod-patch.exe" "$(TargetPath)"</Command>
     </PostBuildEvent>
-    <PostBuildEvent>
-      <Command>
-        mkdir "$(BakkesModPath)\data\PlatformDisplayImages"
-        copy /y /v "$(SolutionDir)data\PlatformDisplayImages\*" "$(BakkesModPath)\data\PlatformDisplayImages\*"
-      </Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
   <Target Name="ShowBakkesInfo" BeforeTargets="PrepareForBuild">
