@@ -112,6 +112,7 @@
     <ClCompile Include="PlatformDisplayGUI.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ScoreboardPositionInfo.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imguivariouscontrols.h" />
