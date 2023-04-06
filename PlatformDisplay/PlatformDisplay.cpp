@@ -217,7 +217,6 @@ std::string PlatformDisplay::to_lower(std::string s) {
 	return s;
 }
 
-
 void PlatformDisplay::Render(CanvasWrapper canvas) {
 	CVarWrapper enabledCvar = cvarManager->getCvar("PlatformDisplay_Enabled");
 	if (!enabledCvar) { return; }
