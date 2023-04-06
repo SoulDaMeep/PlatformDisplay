@@ -19,7 +19,6 @@ class PlatformDisplay :
 	void RenderSettings() override;
 	std::string GetPluginName() override;
 
-
 	bool isWindowOpen_ = false;
 	bool isMinimized_ = false;
 	std::string menuTitle_ = "PlatformDisplay";
@@ -35,7 +34,6 @@ class PlatformDisplay :
 	void getNamesAndPlatforms();
 	void Render(CanvasWrapper canvas);
 
-	float image_scale = 1.0f;
 	struct image {
 		std::shared_ptr<ImageWrapper> img;
 		Vector2 position;
@@ -62,11 +60,7 @@ class PlatformDisplay :
 	bool compareName(int mmr1, std::string name1, int mmr2, std::string name2);
 	std::string to_lower(std::string s);
 	bool isSBOpen = false;
-	bool mutators = false;
 	bool isReplaying = false;
-	float uiScale = 1.0f;
-	Vector2 canvas_size;
-	float scale = 1.0f;
 
 	std::shared_ptr<ImageWrapper> logos[6];
 	std::shared_ptr<ImageWrapper> notintlogos[6];

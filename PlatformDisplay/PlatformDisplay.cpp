@@ -208,8 +208,6 @@ bool PlatformDisplay::compareName(int mmr1, std::string name1, int mmr2, std::st
 	else return false;
 }
 
-
-
 std::string PlatformDisplay::to_lower(std::string s) {
 	std::for_each(s.begin(), s.end(), [this](char& c) {
 		c = std::tolower(c);
@@ -273,12 +271,10 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 
 			Vector2F drawPos;
 			if (pri.team == 0) {
-				drawPos = sbPosInfo.blueLeaderPos;
-				drawPos += Vector2F{0, sbPosInfo.playerSeparation * blues };
+				drawPos = sbPosInfo.blueLeaderPos + Vector2F{0, sbPosInfo.playerSeparation * blues };
 			}
 			else {
-				drawPos = sbPosInfo.orangeLeaderPos;
-				drawPos += Vector2F{0, sbPosInfo.playerSeparation * oranges };
+				drawPos = sbPosInfo.orangeLeaderPos + Vector2F{0, sbPosInfo.playerSeparation * oranges };
 			}
 
 			canvas.SetPosition(drawPos);
