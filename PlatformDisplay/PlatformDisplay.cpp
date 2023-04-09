@@ -44,6 +44,23 @@ std::vector<int> orangeTeamLogos;
 float Gap = 0.0f;
 bool show = false;
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
+
+struct SSParams {
+	uintptr_t PRI_A;
+	uintptr_t PRI_B;
+
+	// if hooking post
+	int32_t ReturnValue;
+};
+
+std::string nameAndId(PriWrapper pri) {
+	return pri.GetPlayerName().ToString() + "|" + pri.GetUniqueIdWrapper().GetIdString();
+}
+
+std::string nameAndId(PlatformDisplay::pri p) {
+	return p.name + "|" + p.uid.GetIdString();
+}
+
 void PlatformDisplay::onLoad()
 {
 	_globalCvarManager = cvarManager;
@@ -55,6 +72,31 @@ void PlatformDisplay::onLoad()
 		notintlogos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + "-no-tint.png"), false, false);
 		notintlogos[i]->LoadForCanvas();
 	}
+
+	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", [this](ActorWrapper gameEvent, void* params, std::string eventName) {
+		SSParams* p = static_cast<SSParams*>(params);
+		if (!p) { LOG("NULL SSParams"); return; }
+		PriWrapper a(p->PRI_A);
+		PriWrapper b(p->PRI_B);
+		//LOG("{} _ {}", a.GetPlayerName().ToString(), b.GetPlayerName().ToString());
+		//LOG("{} __ {}", a.GetUniqueIdWrapper().GetIdString(), b.GetUniqueIdWrapper().GetIdString());
+		if (a.GetTeamNum2() > 1 && comparedPris.find(nameAndId(a)) != comparedPris.end()) {
+			comparedPris[nameAndId(a)].score = a.GetMatchScore();
+		}
+		else {
+			comparedPris[nameAndId(a)] = a;
+		}
+		if (b.GetTeamNum2() > 1 && comparedPris.find(nameAndId(b)) != comparedPris.end()) {
+			comparedPris[nameAndId(b)].score = b.GetMatchScore();
+		}
+		else {
+			comparedPris[nameAndId(b)] = b;
+		}
+	});
+
+	/*gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.PRI_TA.GetScoreboardStats", [this](ActorWrapper pri, void* params, std::string eventName) {
+		accumulate = false;
+	});*/
 
 	//Sounds like a lot of HOOPLA!!!
 	cvarManager->registerCvar("PlatformDisplay_OverrideTints", "0", "Override the autotinting of the platform icons");
@@ -70,6 +112,7 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](std::string eventName) {
 		BlueTeamValues.clear();
 		OrangeTeamValues.clear();
+		comparedPris.clear();
 	});
 	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnOpenScoreboard", [this](std::string eventName) {
 		show = true;
@@ -172,7 +215,7 @@ void PlatformDisplay::updateScores(bool keepOrder) {
 			if (index > toRemove) index--;
 		}
 		if (isNew || !keepOrder) {
-			leaderboard.insert(leaderboard.begin() + index, { uidw, score, priw.GetTeamNum(), isBot, name, platform });
+			leaderboard.insert(leaderboard.begin() + index, { priw });
 		}
 		else {
 			leaderboard[toRemove].team = priw.GetTeamNum();
@@ -244,6 +287,47 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 		MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 		if (sw.GetbMatchEnded()) return;
 
+		// prune
+		auto server = gameWrapper->GetCurrentGameState();
+		if (!server) { return; }
+		auto activePris = server.GetPRIs();
+		auto copy = comparedPris;
+		for (auto [key, value] : copy) {
+			// 2 cases
+			// bot
+			// zero points
+			if (value.isBot || value.score == 0) {
+				bool shouldPrune = true;
+				for (int i = 0; i < activePris.Count(); i++) {
+					PriWrapper pri = activePris.Get(i);
+					if (!pri) { continue; }
+					if (nameAndId(value) == nameAndId(pri)) {
+						shouldPrune = false;
+					}
+				}
+				if (shouldPrune) {
+					comparedPris.erase(key);
+				}
+			}
+		}
+
+		std::vector<pri> pris;
+		for (auto [key, value] : comparedPris) {
+			pris.push_back(value);
+		}
+		std::sort(pris.begin(), pris.end(), [](pri a, pri b) {return a.score > b.score; });
+		num_blues = 0;
+		num_oranges = 0;
+		for (auto pri: pris) {
+			if (pri.team == 0) {
+				num_blues++;
+			}
+			else if (pri.team == 1) {
+				num_oranges++;
+			}
+		}
+		LOG("{}", comparedPris.size());
+		LOG("{} {} {}", num_blues, num_oranges, num_blues + num_oranges);
 		Vector2 screenSize = gameWrapper->GetScreenSize();
 		Vector2F screenSizeFloat = { screenSize.X, screenSize.Y };
 		SbPosInfo sbPosInfo = getSbPosInfo(screenSizeFloat,
@@ -254,11 +338,14 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 
 		int blues = -1;
 		int oranges = -1;
-		for (auto pri : leaderboard) {
+
+		for (auto pri : pris) {
+		//for (auto pri: comparedPris) {
+		//for (auto pri : leaderboard) {
 			if (pri.team == 0) {
 				blues++;
 			}
-			else if (pri.team == 1){
+			else if (pri.team == 1) {
 				oranges++;
 			}
 			if (pri.isBot || pri.team > 1) {
@@ -286,7 +373,7 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 			std::shared_ptr<ImageWrapper> image = (doOverride == 1)? notintlogos[PlatformImageMap[platformImage]] : logos[PlatformImageMap[platformImage]];
 			if (image->IsLoadedForCanvas()) {
 				if (doOverride == 1) {
-					canvas.SetColor({ 255, 255, 255, 255 });
+					canvas.SetColor({ 255, 255, 255, 155 });
 				}
 				else if (doOverride == 2) {
 					if (pri.team == 0) {

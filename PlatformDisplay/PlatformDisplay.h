@@ -5,7 +5,23 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
 #include "version.h"
+
+#include <map>
+#include <string>
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
+
+struct PriComp {
+	bool operator() (PriWrapper a, PriWrapper b) const {
+		if (!a) {
+			if (!b) { return false; }
+			return true;
+		}
+		else if (!b) {
+			return true;
+		}
+		return a.GetMatchScore() < b.GetMatchScore();
+	}
+};
 
 class PlatformDisplay :
 	public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow, public BakkesMod::Plugin::PluginWindow
@@ -39,6 +55,7 @@ class PlatformDisplay :
 		Vector2 position;
 		float scale;
 	};
+	public:
 	struct pri {
 		UniqueIDWrapper uid;
 		int score;
@@ -46,7 +63,24 @@ class PlatformDisplay :
 		bool isBot;
 		std::string name;
 		OnlinePlatform platform;
+
+		pri() {}
+		pri(PriWrapper p) {
+			if (!p) { return; }
+			uid = p.GetUniqueIdWrapper();
+			score = p.GetMatchScore();
+			team = p.GetTeamNum2();
+			isBot = p.GetbBot();
+			name = p.GetPlayerName().ToString();
+			platform = p.GetPlatform();
+		}
 	};
+	private:
+
+	std::unordered_map<std::string, pri> comparedPris;
+	//std::set<PriWrapper, PriComp> comparedPris;
+	bool accumulate;
+
 
 	LinearColor teamColors[2];
 
