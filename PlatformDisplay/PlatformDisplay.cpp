@@ -382,6 +382,3 @@ void PlatformDisplay::getNamesAndPlatforms() {
 
 	}
 }
-void PlatformDisplay::onUnload()
-{
-}
