@@ -2,7 +2,7 @@
 
 plugin id: 376
 
-I will come back to this plugin to make it more user friendly, also fixing any bugs that might appear through the journey of this plugin. Please notify me if there is any bugs on Discord: SOul#7423
+I will come back to this plugin to make it more user friendly, also fixing any bugs that might appear through the journey of this plugin. Please notify me if there is any bugs on Discord: @souldameep
 
 Issues that we know of:
 1. When players leave, the entire display can get messed up or "shifted". As of right now, this is not something we can fix.
