@@ -55,7 +55,7 @@ class PlatformDisplay :
 		Vector2 position;
 		float scale;
 	};
-	public:
+public:
 	struct pri {
 		UniqueIDWrapper uid;
 		int score;
@@ -75,8 +75,8 @@ class PlatformDisplay :
 			platform = p.GetPlatform();
 		}
 	};
-	private:
-
+private:
+	std::vector<std::pair<pri, pri>> comparisons;
 	std::unordered_map<std::string, pri> comparedPris;
 	//std::set<PriWrapper, PriComp> comparedPris;
 	bool accumulate;

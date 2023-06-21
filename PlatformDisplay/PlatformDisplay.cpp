@@ -74,10 +74,15 @@ void PlatformDisplay::onLoad()
 	}
 
 	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", [this](ActorWrapper gameEvent, void* params, std::string eventName) {
+		if (!accumulate) {
+			accumulate = true;
+			comparisons.clear();
+		}
 		SSParams* p = static_cast<SSParams*>(params);
 		if (!p) { LOG("NULL SSParams"); return; }
 		PriWrapper a(p->PRI_A);
 		PriWrapper b(p->PRI_B);
+		comparisons.push_back({ a, b });
 		//LOG("{} _ {}", a.GetPlayerName().ToString(), b.GetPlayerName().ToString());
 		//LOG("{} __ {}", a.GetUniqueIdWrapper().GetIdString(), b.GetUniqueIdWrapper().GetIdString());
 		if (a.GetTeamNum2() > 1 && comparedPris.find(nameAndId(a)) != comparedPris.end()) {
@@ -94,9 +99,12 @@ void PlatformDisplay::onLoad()
 		}
 	});
 
-	/*gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.PRI_TA.GetScoreboardStats", [this](ActorWrapper pri, void* params, std::string eventName) {
-		accumulate = false;
-	});*/
+	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.PRI_TA.GetScoreboardStats", [this](ActorWrapper pri, void* params, std::string eventName) {
+		if (accumulate) {
+			accumulate = false;
+			// update leaderboard
+		}
+	});
 
 	//Sounds like a lot of HOOPLA!!!
 	cvarManager->registerCvar("PlatformDisplay_OverrideTints", "0", "Override the autotinting of the platform icons");
