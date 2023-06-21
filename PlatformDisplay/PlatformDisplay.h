@@ -7,20 +7,6 @@
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
-#define SCOREBOARD_LEFT 537
-#define BLUE_BOTTOM 77
-#define ORANGE_TOP 32
-#define BANNER_DISTANCE 57
-#define IMAGE_WIDTH 150
-#define IMAGE_HEIGHT 100
-#define CENTER_X 960
-#define CENTER_Y 540
-#define SCOREBOARD_HEIGHT 548
-#define SCOREBOARD_WIDTH 1033
-#define IMBALANCE_SHIFT 32
-#define MUTATOR_SIZE 478
-#define SKIP_TICK_SHIFT 67
-
 class PlatformDisplay :
 	public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow, public BakkesMod::Plugin::PluginWindow
 	{
@@ -32,7 +18,6 @@ class PlatformDisplay :
 
 	void RenderSettings() override;
 	std::string GetPluginName() override;
-
 
 	bool isWindowOpen_ = false;
 	bool isMinimized_ = false;
@@ -49,7 +34,6 @@ class PlatformDisplay :
 	void getNamesAndPlatforms();
 	void Render(CanvasWrapper canvas);
 
-	float image_scale = 1.0f;
 	struct image {
 		std::shared_ptr<ImageWrapper> img;
 		Vector2 position;
@@ -76,11 +60,7 @@ class PlatformDisplay :
 	bool compareName(int mmr1, std::string name1, int mmr2, std::string name2);
 	std::string to_lower(std::string s);
 	bool isSBOpen = false;
-	bool mutators = false;
 	bool isReplaying = false;
-	float uiScale = 1.0f;
-	Vector2 canvas_size;
-	float scale = 1.0f;
 
 	std::shared_ptr<ImageWrapper> logos[6];
 	std::shared_ptr<ImageWrapper> notintlogos[6];

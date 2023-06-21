@@ -1,5 +1,8 @@
 #include "pch.h"
+
 #include "PlatformDisplay.h"
+#include "ScoreboardPositionInfo.h"
+
 #include <map>
 #include <iostream>
 
@@ -205,8 +208,6 @@ bool PlatformDisplay::compareName(int mmr1, std::string name1, int mmr2, std::st
 	else return false;
 }
 
-
-
 std::string PlatformDisplay::to_lower(std::string s) {
 	std::for_each(s.begin(), s.end(), [this](char& c) {
 		c = std::tolower(c);
@@ -243,29 +244,14 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 		MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 		if (sw.GetbMatchEnded()) return;
 
-		//-----Black Magic, thanks BenTheDan------------
-		Vector2 canvas_size = gameWrapper->GetScreenSize();
-		if (float(canvas_size.X) / float(canvas_size.Y) > 1.5f) scale = 0.507f * canvas_size.Y / SCOREBOARD_HEIGHT;
-		else scale = 0.615f * canvas_size.X / SCOREBOARD_WIDTH;
+		Vector2 screenSize = gameWrapper->GetScreenSize();
+		Vector2F screenSizeFloat = { screenSize.X, screenSize.Y };
+		SbPosInfo sbPosInfo = getSbPosInfo(screenSizeFloat,
+			gameWrapper->GetDisplayScale(),
+			/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
+			num_blues,
+			num_oranges);
 
-		uiScale = gameWrapper->GetDisplayScale();
-		// LOG("Got UI scale {}", uiScale);
-		mutators = mmrWrapper.GetCurrentPlaylist() == 34;
-		Vector2F center = Vector2F{ float(canvas_size.X) / 2, float(canvas_size.Y) / 2 };
-		float mutators_center = canvas_size.X - 1005.0f * scale * uiScale;
-		if (mutators_center < center.X && mutators) center.X = mutators_center;
-		int team_difference = num_blues - num_oranges;
-		center.Y += IMBALANCE_SHIFT * (team_difference - ((num_blues == 0) != (num_oranges == 0)) * (team_difference >= 0 ? 1 : -1)) * scale * uiScale;
-
-		image_scale = 0.48f;
-		float tier_X = -SCOREBOARD_LEFT - IMAGE_WIDTH * image_scale;
-		float tier_Y_blue = -BLUE_BOTTOM + (6 * (4 - num_blues));
-		float tier_Y_orange = ORANGE_TOP;
-		int div_X = int(std::roundf(center.X + (-SCOREBOARD_LEFT - 100.0f * image_scale) * scale * uiScale));
-		image_scale *= scale * uiScale;
-
-		// based on 100x100 img
-		//------End Black Magic---------
 		int blues = -1;
 		int oranges = -1;
 		for (auto pri : leaderboard) {
@@ -283,14 +269,15 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 			std::string playerOS = PlatformMap.at(pri.platform); // "os"
 			std::string playerString = playerOS + playerName; // "[OS]playername"
 
-			float Y;
-			if (pri.team == 0) { Y = tier_Y_blue - BANNER_DISTANCE * (num_blues - blues) + 9; }
-			else { Y = tier_Y_orange + BANNER_DISTANCE * (oranges); }
-			float X = tier_X + 100.0f * 0.48f + 31;
+			Vector2F drawPos;
+			if (pri.team == 0) {
+				drawPos = sbPosInfo.blueLeaderPos + Vector2F{0, sbPosInfo.playerSeparation * blues };
+			}
+			else {
+				drawPos = sbPosInfo.orangeLeaderPos + Vector2F{0, sbPosInfo.playerSeparation * oranges };
+			}
 
-			Y = center.Y + Y * scale * uiScale;
-			X = center.X + X * scale * uiScale;
-			canvas.SetPosition(Vector2{ (int)X, (int)Y });
+			canvas.SetPosition(drawPos);
 			//canvas.FillBox(Vector2{(int)(100.0*image_scale),(int)( 100.0*image_scale)});
 
 			// 2x scale
@@ -298,7 +285,6 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 			int platformImage = pri.platform;
 			std::shared_ptr<ImageWrapper> image = (doOverride == 1)? notintlogos[PlatformImageMap[platformImage]] : logos[PlatformImageMap[platformImage]];
 			if (image->IsLoadedForCanvas()) {
-				canvas.SetPosition(Vector2{ (int)X, (int)Y });
 				if (doOverride == 1) {
 					canvas.SetColor({ 255, 255, 255, 255 });
 				}
@@ -319,10 +305,10 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 					// if not steam player, show everything
 					//if not a steam player
 					if(!steamPlayerCvar.getBoolValue()) {
-						canvas.DrawTexture(image.get(), 100.0f / 48.0f * image_scale); // last bit of scale b/c imgs are 48x48
+						canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
 						//if steam player
 					} else if(steamPlayerCvar.getBoolValue() && pri.platform!=1) {
-						canvas.DrawTexture(image.get(), 100.0f / 48.0f * image_scale); // last bit of scale b/c imgs are 48x48
+						canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
 					}
 			}
 			else {
@@ -331,6 +317,7 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 		}
 	}
 }
+
 void PlatformDisplay::getNamesAndPlatforms() {
 	//reset the vectors so it doesnt grow
 	BlueTeamValues.clear();
