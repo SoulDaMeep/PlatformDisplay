@@ -13,7 +13,11 @@
       <AdditionalDependencies>pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command> "$(BakkesModPath)\bakkesmodsdk\bakkesmod-patch.exe" "$(TargetPath)"</Command>
+      <Command>
+        "$(BakkesModPath)\bakkesmodsdk\bakkesmod-patch.exe" "$(TargetPath)"
+        mkdir "$(BakkesModPath)\data\PlatformDisplayImages"
+        copy /y /v "$(SolutionDir)data\PlatformDisplayImages\*" "$(BakkesModPath)\data\PlatformDisplayImages\*"
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
