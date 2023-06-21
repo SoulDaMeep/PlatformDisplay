@@ -4,7 +4,7 @@ plugin id: 376
 
 I will come back to this plugin to make it more user friendly, also fixing any bugs that might appear through the journey of this plugin. Please notify me if there is any bugs on Discord: @souldameep
 
-Big thanks to like_book for making the code easier to read along with making it more compatible with different screen sizes. 
+Big thanks to like.book for refactoring the code along with making it more compatible with different screen sizes.
 
 
 ## Issues that we know of:
