@@ -6,6 +6,8 @@
 #include <map>
 #include <iostream>
 
+namespace {
+
 BAKKESMOD_PLUGIN(PlatformDisplay, "write a plugin description here", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::map<int, std::string> PlatformMap{
@@ -31,19 +33,8 @@ std::map<int, int> PlatformImageMap{
 	{ 9,  0 },
 	{ 11, 5 }
 };
+
 float scale = 0.65f;
-
-// for both teams
-// { {"Player1Name", "OS"}, {"Player2Name", "OS"}, {"Player3Name", "OS"}, }
-// vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-std::vector<std::vector<std::string>> BlueTeamValues;
-std::vector<std::vector<std::string>> OrangeTeamValues;
-std::vector<int> blueTeamLogos;
-std::vector<int> orangeTeamLogos;
-
-float Gap = 0.0f;
-bool show = false;
-std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
 struct SSParams {
 	uintptr_t PRI_A;
@@ -60,88 +51,102 @@ std::string nameAndId(PriWrapper pri) {
 std::string nameAndId(PlatformDisplay::pri p) {
 	return p.name + "|" + p.uid.GetIdString();
 }
+} // namespace
+
+std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
 void PlatformDisplay::onLoad()
 {
 	_globalCvarManager = cvarManager;
-	for (int i = 0; i < 6; i++) {
+
+	for (int i = 0; i < LOGO_COUNT; i++) {
 		logos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + ".png"), false, false);
 		logos[i]->LoadForCanvas();
 	}
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < LOGO_COUNT; i++) {
 		notintlogos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + "-no-tint.png"), false, false);
 		notintlogos[i]->LoadForCanvas();
 	}
 
-	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", [this](ActorWrapper gameEvent, void* params, std::string eventName) {
-		if (!accumulate) {
-			accumulate = true;
-			comparisons.clear();
-		}
-		SSParams* p = static_cast<SSParams*>(params);
-		if (!p) { LOG("NULL SSParams"); return; }
-		PriWrapper a(p->PRI_A);
-		PriWrapper b(p->PRI_B);
-		comparisons.push_back({ a, b });
-		//LOG("{} _ {}", a.GetPlayerName().ToString(), b.GetPlayerName().ToString());
-		//LOG("{} __ {}", a.GetUniqueIdWrapper().GetIdString(), b.GetUniqueIdWrapper().GetIdString());
-		if (a.GetTeamNum2() > 1 && comparedPris.find(nameAndId(a)) != comparedPris.end()) {
-			comparedPris[nameAndId(a)].score = a.GetMatchScore();
-		}
-		else {
-			comparedPris[nameAndId(a)] = a;
-		}
-		if (b.GetTeamNum2() > 1 && comparedPris.find(nameAndId(b)) != comparedPris.end()) {
-			comparedPris[nameAndId(b)].score = b.GetMatchScore();
-		}
-		else {
-			comparedPris[nameAndId(b)] = b;
-		}
-	});
-
-	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.PRI_TA.GetScoreboardStats", [this](ActorWrapper pri, void* params, std::string eventName) {
-		if (accumulate) {
-			accumulate = false;
-			// update leaderboard
-		}
-	});
-
-	//Sounds like a lot of HOOPLA!!!
 	cvarManager->registerCvar("PlatformDisplay_OverrideTints", "0", "Override the autotinting of the platform icons");
 	cvarManager->registerCvar("PlatformDisplay_Enabled", "1", "Enable the plugin");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerBlueTeam", "#FFFFFF", "Changes the color of the text for blue team");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerOrangeTeam", "#FFFFFF", "Changes the color of the text for Orange Team");
 	cvarManager->registerCvar("PlatformDisplay_SteamPlayer", "0", "If you use steam, check this");
-	//Make thing go yes
-	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
-		Render(canvas);
-	});
 
-	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](std::string eventName) {
-		BlueTeamValues.clear();
-		OrangeTeamValues.clear();
-		comparedPris.clear();
-	});
-	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnOpenScoreboard", [this](std::string eventName) {
-		show = true;
-		updateScores();
-	});
-	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnCloseScoreboard", [this](std::string eventName) {
-		show = false;
-	});
-
-	//std::bind instead
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
-		updateScores();
+		SetTeamColors();
 	});
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.AddCar", [this](std::string eventName) {
-		leaderboard.clear();
-		updateScores();
+		SetTeamColors();
 	});
-	//
+	gameWrapper->HookEventWithCaller<ActorWrapper>("Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", [this](ActorWrapper gameEvent, void* params, std::string eventName) {
+		RecordScoreboardComparison(gameEvent, params, eventName);
+	});
+	gameWrapper->HookEventWithCaller<ActorWrapper>(
+		"Function TAGame.PRI_TA.GetScoreboardStats",
+		[this](auto args...) { ComputeScoreboardInfo();	});
+	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnOpenScoreboard", [this](...) {
+		scoreBoardOpen = true;
+	});
+	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnCloseScoreboard", [this](...) {
+		scoreBoardOpen = false;
+	});
+	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
+		comparedPris.clear();
+	});
+
+	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
+		RenderPlatformLogos(canvas);
+	});
 }
 
-void PlatformDisplay::updateScores(bool keepOrder) {
+void PlatformDisplay::ComputeScoreboardInfo() {
+	if (!accumulateComparisons) {
+		return;
+	}
+	accumulateComparisons = false;
+	
+}
+
+void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName) {
+	if (!accumulateComparisons) {
+		accumulateComparisons = true;
+		comparisons.clear();
+	}
+	SSParams* p = static_cast<SSParams*>(params);
+	if (!p) { LOG("NULL SSParams"); return; }
+	PriWrapper a(p->PRI_A);
+	PriWrapper b(p->PRI_B);
+	comparisons.push_back({ a, b });
+
+	auto teamNumA = a.GetTeamNum2();
+	if (teamNumA <= 1) {
+		teamHistory[nameAndId(a)] = teamNumA;
+	}
+
+	auto teamNumB = b.GetTeamNum2();
+	if (teamNumB <= 1) {
+		teamHistory[nameAndId(b)] = teamNumB;
+	}
+
+	if (a.GetTeamNum2() > 1 && comparedPris.find(nameAndId(a)) != comparedPris.end()) {
+		comparedPris[nameAndId(a)].score = a.GetMatchScore();
+	}
+	else {
+		comparedPris[nameAndId(a)] = a;
+	}
+	if (b.GetTeamNum2() > 1 && comparedPris.find(nameAndId(b)) != comparedPris.end()) {
+		comparedPris[nameAndId(b)].score = b.GetMatchScore();
+	}
+	else {
+		comparedPris[nameAndId(b)] = b;
+	}
+
+	LOG("{} _ {}", a.GetPlayerName().ToString(), b.GetPlayerName().ToString());
+}
+
+void PlatformDisplay::SetTeamColors(bool keepOrder) {
 #ifdef _DEBUG
 	if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame() || gameWrapper->IsInFreeplay() || gameWrapper->IsInReplay()) return;
 	ServerWrapper sw = gameWrapper->IsInOnlineGame() ? gameWrapper->GetOnlineGame() : gameWrapper->GetGameEventAsServer();
@@ -149,10 +154,7 @@ void PlatformDisplay::updateScores(bool keepOrder) {
 	if (!gameWrapper->IsInOnlineGame()) return;
 	ServerWrapper sw = gameWrapper->GetOnlineGame();
 #endif
-
 	if (sw.IsNull()) return;
-	MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
-	if (mmrWrapper.GetCurrentPlaylist() == 6) return;
 
 	ArrayWrapper<TeamWrapper> teams = sw.GetTeams();
 	for (auto team : teams) {
@@ -163,117 +165,16 @@ void PlatformDisplay::updateScores(bool keepOrder) {
 			continue;
 		}
 		LinearColor unscaledColor = team.GetPrimaryColor();
-		teamColors[team.GetTeamNum2()] = { unscaledColor.R * 255, unscaledColor.G * 255, unscaledColor.B * 255, unscaledColor.A * 255};
+		teamColors[team.GetTeamNum2()] = unscaledColor * 255.0f;
 		LOG("Got {}, {}, {}, {} for {} color", teamColors[team.GetTeamNum2()].R, teamColors[team.GetTeamNum2()].G, teamColors[team.GetTeamNum2()].B, teamColors[team.GetTeamNum2()].A, team.GetTeamNum2());
 	}
-
-	int currentPlaylist = mmrWrapper.GetCurrentPlaylist();
-	std::vector<std::string> currentUids;
-	std::vector<std::string> currentNames;
-	bool isThereNew = false;
-	int blues = 0;
-	int oranges = 0;
-	ArrayWrapper<PriWrapper> players = sw.GetPRIs();
-
-	for (size_t i = 0; i < players.Count(); i++)
-	{
-		PriWrapper priw = players.Get(i);
-		if (priw.IsNull()) continue;
-
-		UniqueIDWrapper uidw = priw.GetUniqueIdWrapper();
-		int score = priw.GetMatchScore();
-		int size = leaderboard.size();
-		int index = size;
-		int toRemove = -1;
-		bool isNew = true;
-		bool isBot = priw.GetbBot();
-
-		UniqueIDWrapper uniqueID = priw.GetUniqueIdWrapper(); //here
-		OnlinePlatform platform = uniqueID.GetPlatform(); //here
-
-		int mmr = 0;
-		if (mmrs.find(uidw.GetIdString()) != mmrs.end()) { mmr = mmrs[uidw.GetIdString()]; }
-		else {
-			if (mmrWrapper.IsSynced(uidw, currentPlaylist) && !isBot) mmr = mmrWrapper.GetPlayerMMR(uidw, currentPlaylist);
-			mmrs[uidw.GetIdString()] = mmr;
-		}
-
-		std::string name = priw.GetPlayerName().ToString(); currentNames.push_back(name);
-		currentUids.push_back(uidw.GetIdString());
-
-		for (size_t j = 0; j < size; j++)
-		{
-			if (index == size) {
-				if (leaderboard[j].score < score) {
-					index = j;
-				}
-				else if (leaderboard[j].score == score) {
-					if (compareName(mmr, name, mmrs[leaderboard[j].uid.GetIdString()], leaderboard[j].name) && !isBot) index = j;
-				}
-			}
-			if (uidw.GetIdString() == leaderboard[j].uid.GetIdString() && name == leaderboard[j].name) {
-				toRemove = j;
-				isNew = false;
-			}
-		}
-
-		if (isNew) { isThereNew = true; getNamesAndPlatforms(); }
-		if (toRemove > -1 && !keepOrder) {
-			leaderboard.erase(leaderboard.begin() + toRemove);
-			if (index > toRemove) index--;
-		}
-		if (isNew || !keepOrder) {
-			leaderboard.insert(leaderboard.begin() + index, { priw });
-		}
-		else {
-			leaderboard[toRemove].team = priw.GetTeamNum();
-		}
-		if (priw.GetTeamNum() == 0) blues++;
-		else if (priw.GetTeamNum() == 1) oranges++;
-	}
-	num_blues = blues;
-	num_oranges = oranges;
-
-	//remove pris, that no longer exist
-	if (isThereNew || players.Count() != leaderboard.size()) {
-		for (size_t i = leaderboard.size(); i >= 1; i--)
-		{
-			bool remove = true;
-			for (size_t j = 0; j < currentNames.size(); j++)
-			{
-				if (currentNames[j] == leaderboard[i - 1].name && currentUids[j] == leaderboard[i - 1].uid.GetIdString()) {
-					remove = false;
-					break;
-				}
-			}
-			// if (remove) { player_ranks.erase(leaderboard[i - 1].uid.GetIdString()); leaderboard.erase(leaderboard.begin() + i - 1); }
-		}
-	}
 }
 
-bool PlatformDisplay::compareName(int mmr1, std::string name1, int mmr2, std::string name2) {
-	if (mmr1 < mmr2) return true;
-	else if (mmr1 == mmr2) {
-		return to_lower(name1).compare(to_lower(name2)) == -1;
-	}
-	else return false;
-}
-
-std::string PlatformDisplay::to_lower(std::string s) {
-	std::for_each(s.begin(), s.end(), [this](char& c) {
-		c = std::tolower(c);
-		});
-	return s;
-}
-
-void PlatformDisplay::Render(CanvasWrapper canvas) {
+void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 	CVarWrapper enabledCvar = cvarManager->getCvar("PlatformDisplay_Enabled");
 	if (!enabledCvar) { return; }
 	bool enabled = enabledCvar.getBoolValue();
-	if (show && enabled) {
-		//get the pos and color for the blue team
-
-		//cvars
+	if (scoreBoardOpen && enabled) {
 		CVarWrapper BlueColorPicker = cvarManager->getCvar("PlatformDisplay_ColorPickerBlueTeam");
 		CVarWrapper overrideTintCvar = cvarManager->getCvar("PlatformDisplay_OverrideTints");
 		CVarWrapper OrangeColorPicker = cvarManager->getCvar("PlatformDisplay_ColorPickerOrangeTeam");
@@ -324,8 +225,7 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 			pris.push_back(value);
 		}
 		std::sort(pris.begin(), pris.end(), [](pri a, pri b) {return a.score > b.score; });
-		num_blues = 0;
-		num_oranges = 0;
+		int num_blues{}, num_oranges{};
 		for (auto pri: pris) {
 			if (pri.team == 0) {
 				num_blues++;
@@ -334,8 +234,6 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 				num_oranges++;
 			}
 		}
-		LOG("{}", comparedPris.size());
-		LOG("{} {} {}", num_blues, num_oranges, num_blues + num_oranges);
 		Vector2 screenSize = gameWrapper->GetScreenSize();
 		Vector2F screenSizeFloat = { screenSize.X, screenSize.Y };
 		SbPosInfo sbPosInfo = getSbPosInfo(screenSizeFloat,
@@ -411,59 +309,4 @@ void PlatformDisplay::Render(CanvasWrapper canvas) {
 			}
 		}
 	}
-}
-
-void PlatformDisplay::getNamesAndPlatforms() {
-	//reset the vectors so it doesnt grow
-	BlueTeamValues.clear();
-	OrangeTeamValues.clear();
-	orangeTeamLogos.clear();
-	blueTeamLogos.clear();
-
-	//get server
-	ServerWrapper server = gameWrapper->GetCurrentGameState();
-	if (!server) { return; }
-
-	//get the cars in the sever
-	ArrayWrapper<CarWrapper> cars = server.GetCars(); // here
-
-	//for car in {}
-	for (CarWrapper car : cars) {
-
-
-		// idk what a pri is but we get it here
-		PriWrapper pri = car.GetPRI();
-		if (!pri) { return; }
-
-		//get the uniqueID and the platform -> int <0-13>
-		UniqueIDWrapper uniqueID = pri.GetUniqueIdWrapper(); //here
-		OnlinePlatform platform = uniqueID.GetPlatform(); //here
-		if (!platform) { return; }
-
-		// declare in iterator and an os string
-		std::map<int, std::string>::iterator it;
-		std::string OS;
-
-		//wanting to check what team the player is on so we can add them to the right vector
-		int teamNum = car.GetTeamNum2();
-		//get the owner name
-		std::string name = car.GetOwnerName();
-		//for len
-		for (it = PlatformMap.begin(); it != PlatformMap.end(); it++) {
-			
-			int key = it->first; //int <0-12>
-
-			if (key == platform) {
-				OS = it->second; // what ever the number is mapped to
-				break;
-			}
-		}
-		//add correspondingly with the name and os
-		if (teamNum == 0) { BlueTeamValues.push_back({ name, OS }); blueTeamLogos.push_back(platform); }
-		if (teamNum == 1) { OrangeTeamValues.push_back({ name, OS }); orangeTeamLogos.push_back(platform); }
-
-	}
-}
-void PlatformDisplay::onUnload()
-{
 }

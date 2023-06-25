@@ -10,51 +10,9 @@
 #include <string>
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
-struct PriComp {
-	bool operator() (PriWrapper a, PriWrapper b) const {
-		if (!a) {
-			if (!b) { return false; }
-			return true;
-		}
-		else if (!b) {
-			return true;
-		}
-		return a.GetMatchScore() < b.GetMatchScore();
-	}
-};
-
-class PlatformDisplay :
-	public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow, public BakkesMod::Plugin::PluginWindow
-	{
-
-	std::shared_ptr<bool> enabled;
-
-	virtual void onLoad();
-	virtual void onUnload();
-
-	void RenderSettings() override;
-	std::string GetPluginName() override;
-
-	bool isWindowOpen_ = false;
-	bool isMinimized_ = false;
-	std::string menuTitle_ = "PlatformDisplay";
-
-	virtual void Render() override;
-	virtual std::string GetMenuName() override;
-	virtual std::string GetMenuTitle() override;
-	virtual void SetImGuiContext(uintptr_t ctx) override;
-	virtual bool ShouldBlockInput() override;
-	virtual bool IsActiveOverlay() override;
-	virtual void OnOpen() override;
-	virtual void OnClose() override;
-	void getNamesAndPlatforms();
-	void Render(CanvasWrapper canvas);
-
-	struct image {
-		std::shared_ptr<ImageWrapper> img;
-		Vector2 position;
-		float scale;
-	};
+class PlatformDisplay :	public BakkesMod::Plugin::BakkesModPlugin,
+	public BakkesMod::Plugin::PluginSettingsWindow,
+	public BakkesMod::Plugin::PluginWindow {
 public:
 	struct pri {
 		UniqueIDWrapper uid;
@@ -76,27 +34,54 @@ public:
 		}
 	};
 private:
+	/**
+	 * Stores data derived from each scoreboard sort cycle (happens once every second).
+	 */
+	struct ComputedScoreboardInfo {
+		std::vector<pri>sortedPlayers;
+		int bluePlayerCount{};
+		int orangePlayerCount{};
+	};
+
+	virtual void onLoad();
+	/**
+	 * Pre-compute scoreboard info after the sorting algorithm finishes. The hook
+	 * "TAGame.PRI_TA.GetScoreboardStats" runs at least once immediately after Rocket League sorts
+	 * the scoreboard. This happens every second, so computing the info like this saves us some
+	 * performance.
+	 */
+	void ComputeScoreboardInfo();
+	void RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName);
+	void RenderPlatformLogos(CanvasWrapper canvas);
+	void SetTeamColors(bool keepOrder = false);
+
+	void RenderSettings() override;
+	std::string GetPluginName() override;
+	virtual void Render() override;
+	virtual std::string GetMenuName() override;
+	virtual std::string GetMenuTitle() override;
+	virtual void SetImGuiContext(uintptr_t ctx) override;
+	virtual bool ShouldBlockInput() override;
+	virtual bool IsActiveOverlay() override;
+	virtual void OnOpen() override;
+	virtual void OnClose() override;
+
+	// Members for scoreboard tracking logic.
 	std::vector<std::pair<pri, pri>> comparisons;
 	std::unordered_map<std::string, pri> comparedPris;
-	//std::set<PriWrapper, PriComp> comparedPris;
-	bool accumulate;
+	std::unordered_map<std::string, int> teamHistory;
+	ComputedScoreboardInfo computedInfo{};
+	bool accumulateComparisons{};
 
+	// Members for scoreboard rendering.
+	bool scoreBoardOpen{};
+	LinearColor teamColors[2]{ {255, 255, 255, 255}, {255, 255, 255, 255} };
+	const static int LOGO_COUNT = 6;
+	std::shared_ptr<ImageWrapper> logos[LOGO_COUNT];
+	std::shared_ptr<ImageWrapper> notintlogos[LOGO_COUNT];
 
-	LinearColor teamColors[2];
-
-	std::vector<pri> leaderboard;
-	std::unordered_map<std::string, int> mmrs;
-	int num_blues = 0;
-	int num_oranges = 0;
-
-	std::vector<image> toRender;
-	void updateScores(bool keepOrder = false);
-	bool compareName(int mmr1, std::string name1, int mmr2, std::string name2);
-	std::string to_lower(std::string s);
-	bool isSBOpen = false;
-	bool isReplaying = false;
-
-	std::shared_ptr<ImageWrapper> logos[6];
-	std::shared_ptr<ImageWrapper> notintlogos[6];
+	// Members for menus.
+	bool windowOpen{};
+	std::string menuTitle{ "PlatformDisplay" };
 };
 
