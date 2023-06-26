@@ -1,13 +1,16 @@
 # PlatformDisplay
 
-plugin id: 376
+plugin id: 376 
 
-I will come back to this plugin to make it more user friendly, also fixing any bugs that might appear through the journey of this plugin. Please notify me if there is any bugs on Discord: @souldameep
+Big thanks to the team that helped and supported the making of this plugin:
 
-Big thanks to like.book for refactoring the code along with making it more compatible with different screen sizes.
+> Images gathered and edited by Swan \
+> Images, Banner, and funding by [Mrkz](https://steamcommunity.com/id/Mrkz96/) \
+> Implementation of scoreboard images by Rivques \
+> Implementation of "Ghost Players" and refactoring by LikeBook \
 
-
-## Issues that we know of:
-
-1. When players leave, the entire display can get messed up or "shifted". As of right now, this is not something we can fix.
-2. At the start of the game or when players have the same score, the display will not show the platforms in correct order corresponding to each user on the leaderboard, this is because we dont quite know how the leader board sorts the players. It will get accurate once players start getting points/score. Once we understand how the leaderboard sorts players, this will definetly be fixed.
+#### Issues:
+## "Ghost Players"
+<p>
+When a player leaves, their username might stay on the scoreboard as a dimmed-out version of their user; we We like to call these "Ghost Players". Unfortunately, this issue has caused significant problems in our plugin, as the leaving of a player messes up the entire scoreboard and disrupts its alignment. We don't know when a player leaves whether or not the scoreboard will keep the user as a Ghost Player, but we can take data from RocketLeague itself to decide whether or not the player will stay as a Ghost Player. More information [here](PlatformDisplay/GhostPlayers.md) 
+</p>
