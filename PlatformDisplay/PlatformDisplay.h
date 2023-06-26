@@ -14,16 +14,16 @@ class PlatformDisplay :	public BakkesMod::Plugin::BakkesModPlugin,
 	public BakkesMod::Plugin::PluginSettingsWindow,
 	public BakkesMod::Plugin::PluginWindow {
 public:
-	struct pri {
+	struct Pri {
 		UniqueIDWrapper uid;
-		int score;
-		unsigned char team;
-		bool isBot;
+		int score{};
+		unsigned char team{};
+		bool isBot{};
 		std::string name;
 		OnlinePlatform platform;
 
-		pri() {}
-		pri(PriWrapper p) {
+		Pri() {}
+		Pri(PriWrapper p) {
 			if (!p) { return; }
 			uid = p.GetUniqueIdWrapper();
 			score = p.GetMatchScore();
@@ -32,13 +32,21 @@ public:
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
 		}
+		Pri(const Pri& p) {
+			uid = p.uid;
+			score = p.score;
+			team = p.team;
+			isBot = p.isBot;
+			name = p.name;
+			platform = p.platform;
+		}
 	};
 private:
 	/**
 	 * Stores data derived from each scoreboard sort cycle (happens once every second).
 	 */
 	struct ComputedScoreboardInfo {
-		std::vector<pri>sortedPlayers;
+		std::vector<Pri>sortedPlayers;
 		int bluePlayerCount{};
 		int orangePlayerCount{};
 	};
@@ -67,10 +75,9 @@ private:
 	virtual void OnClose() override;
 
 	// Members for scoreboard tracking logic.
-	std::vector<std::pair<pri, pri>> comparisons;
-	std::unordered_map<std::string, pri> comparedPris;
+	std::vector<std::pair<Pri, Pri>> comparisons;
 	std::unordered_map<std::string, int> teamHistory;
-	ComputedScoreboardInfo computedInfo{};
+	ComputedScoreboardInfo computedInfo{};  // Derived from comparisons and teamHistory.
 	bool accumulateComparisons{};
 
 	// Members for scoreboard rendering.
@@ -78,7 +85,7 @@ private:
 	LinearColor teamColors[2]{ {255, 255, 255, 255}, {255, 255, 255, 255} };
 	const static int LOGO_COUNT = 6;
 	std::shared_ptr<ImageWrapper> logos[LOGO_COUNT];
-	std::shared_ptr<ImageWrapper> notintlogos[LOGO_COUNT];
+	std::shared_ptr<ImageWrapper> noTintLogos[LOGO_COUNT];
 
 	// Members for menus.
 	bool windowOpen{};
