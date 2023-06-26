@@ -63,7 +63,7 @@ void PlatformDisplay::RenderSettings() {
 // Do ImGui rendering here
 void PlatformDisplay::Render()
 {
-	if (!ImGui::Begin(menuTitle_.c_str(), &isWindowOpen_, ImGuiWindowFlags_None))
+	if (!ImGui::Begin(menuTitle.c_str(), &windowOpen, ImGuiWindowFlags_None))
 	{
 		// Early out if the window is collapsed, as an optimization.
 		ImGui::End();
@@ -72,7 +72,7 @@ void PlatformDisplay::Render()
 
 	ImGui::End();
 
-	if (!isWindowOpen_)
+	if (!windowOpen)
 	{
 		cvarManager->executeCommand("togglemenu " + GetMenuName());
 	}
@@ -87,7 +87,7 @@ std::string PlatformDisplay::GetMenuName()
 // Title to give the menu
 std::string PlatformDisplay::GetMenuTitle()
 {
-	return menuTitle_;
+	return menuTitle;
 }
 // Should events such as mouse clicks/key inputs be blocked so they won't reach the game
 bool PlatformDisplay::ShouldBlockInput()
@@ -104,12 +104,12 @@ bool PlatformDisplay::IsActiveOverlay()
 // Called when window is opened
 void PlatformDisplay::OnOpen()
 {
-	isWindowOpen_ = true;
+	windowOpen = true;
 }
 
 // Called when window is closed
 void PlatformDisplay::OnClose()
 {
-	isWindowOpen_ = false;
+	windowOpen = false;
 }
 
