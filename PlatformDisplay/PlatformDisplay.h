@@ -53,6 +53,7 @@ private:
 	void ComputeScoreboardInfo();
 	void RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName);
 	void RenderPlatformLogos(CanvasWrapper canvas);
+	void RenderDebugInfo(CanvasWrapper canvas);
 	void SetTeamColors(bool keepOrder = false);
 
 	void RenderSettings() override;

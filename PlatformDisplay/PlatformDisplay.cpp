@@ -63,6 +63,7 @@ void PlatformDisplay::onLoad()
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerBlueTeam", "#FFFFFF", "Changes the color of the text for Blue team");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerOrangeTeam", "#FFFFFF", "Changes the color of the text for Orange Team");
 	cvarManager->registerCvar("PlatformDisplay_SteamPlayer", "0", "Show/hide icons for steam players");
+	cvarManager->registerCvar("PlatformDisplay_DebugView", "0", "Show/hide debug view");
 
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
 		SetTeamColors();
@@ -238,4 +239,8 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		}
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
 	}	
+}
+
+void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
+
 }
