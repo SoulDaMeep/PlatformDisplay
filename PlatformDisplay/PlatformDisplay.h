@@ -32,14 +32,6 @@ public:
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
 		}
-		Pri(const Pri& p) {
-			uid = p.uid;
-			score = p.score;
-			team = p.team;
-			isBot = p.isBot;
-			name = p.name;
-			platform = p.platform;
-		}
 	};
 private:
 	/**
