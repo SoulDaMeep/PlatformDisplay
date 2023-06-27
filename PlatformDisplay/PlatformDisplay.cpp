@@ -172,11 +172,17 @@ void PlatformDisplay::SetTeamColors(bool keepOrder) {
 }
 
 void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
-	if (!scoreBoardOpen) { return; }
 	if (!gameWrapper->IsInOnlineGame()) { return; }
 	ServerWrapper sw = gameWrapper->GetOnlineGame();
 	if (!sw) { return; }
 	if (sw.GetbMatchEnded()) { return; }
+
+	CVarWrapper debugCvar = cvarManager->getCvar("PlatformDisplay_DebugView");
+	if (debugCvar && debugCvar.getBoolValue()) {
+		RenderDebugInfo(canvas);
+	}
+
+	if (!scoreBoardOpen) { return; }
 
 	CVarWrapper enabledCvar = cvarManager->getCvar("PlatformDisplay_Enabled");
 	bool enabled = enabledCvar ? enabledCvar.getBoolValue() : false;
@@ -238,9 +244,30 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			continue;
 		}
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
-	}	
+	}
 }
 
 void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
-
+	// All based on a 2560x1440 screen because I'm lazy.
+	const LinearColor background{ 69, 69, 69, 169 };
+	float textHeight = 28;
+	// Draw comparisons
+	float comparisonX = 2060;
+	canvas.SetPosition(Vector2F{ comparisonX,0 });
+	canvas.SetColor(background);
+	canvas.FillBox(Vector2F{ 500, textHeight * (comparisons.size() + 2.0f) });
+	Vector2F drawPos{ comparisonX, textHeight };
+	canvas.SetColor({ 255,255,255,255 });
+	canvas.DrawString("Sort comparisons", 2, 2);
+	drawPos += Vector2F{ 0, textHeight };
+	for (const auto& comparison : comparisons) {
+		canvas.SetPosition(drawPos);
+		std::string a = comparison.first.name;
+		a.resize(12, ' ');
+		std::string b = comparison.second.name;
+		b.resize(12, ' ');
+		std::string line = a + " _?_ " + b;
+		canvas.DrawString(line, 2, 2);
+		drawPos += Vector2F{ 0, textHeight };
+	}
 }
