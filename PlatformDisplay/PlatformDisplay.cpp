@@ -269,7 +269,6 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	canvas.SetColor(background);
 	canvas.FillBox(Vector2F{ boxWidth, textHeight * (comparisons.size() + 2.0f) });
 
-
 	canvas.SetColor(text);
 	canvas.SetPosition(drawPos);
 	canvas.DrawString("Sort comparisons", textSize, textSize);
@@ -293,7 +292,6 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	canvas.SetPosition(drawPos);
 	canvas.SetColor(background);
 	canvas.FillBox(Vector2F{ boxWidth, textHeight * (computedInfo.sortedPlayers.size() + 2) });
-
 
 	canvas.SetColor(text);
 	canvas.SetPosition(drawPos);
