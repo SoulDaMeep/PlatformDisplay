@@ -63,6 +63,7 @@ void PlatformDisplay::onLoad()
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerBlueTeam", "#FFFFFF", "Changes the color of the text for Blue team");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerOrangeTeam", "#FFFFFF", "Changes the color of the text for Orange Team");
 	cvarManager->registerCvar("PlatformDisplay_SteamPlayer", "0", "Show/hide icons for steam players");
+	cvarManager->registerCvar("PlatformDisplay_DebugView", "0", "Show/hide debug view");
 
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
 		SetTeamColors();
@@ -171,11 +172,17 @@ void PlatformDisplay::SetTeamColors(bool keepOrder) {
 }
 
 void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
-	if (!scoreBoardOpen) { return; }
 	if (!gameWrapper->IsInOnlineGame()) { return; }
 	ServerWrapper sw = gameWrapper->GetOnlineGame();
 	if (!sw) { return; }
 	if (sw.GetbMatchEnded()) { return; }
+
+	CVarWrapper debugCvar = cvarManager->getCvar("PlatformDisplay_DebugView");
+	if (debugCvar && debugCvar.getBoolValue()) {
+		RenderDebugInfo(canvas);
+	}
+
+	if (!scoreBoardOpen) { return; }
 
 	CVarWrapper enabledCvar = cvarManager->getCvar("PlatformDisplay_Enabled");
 	bool enabled = enabledCvar ? enabledCvar.getBoolValue() : false;
@@ -237,5 +244,68 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			continue;
 		}
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
-	}	
+	}
+}
+
+void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
+	const LinearColor background{ 69, 69, 69, 169 };
+	const LinearColor text{ 255, 255, 255, 255 };
+
+	float textHeight = 28;
+	float boxWidth = 500;
+	float textSize = 2;
+
+	float scalingFactor = canvas.GetSize().Y / 1440.0;
+	boxWidth *= scalingFactor;
+	textHeight *= scalingFactor;
+	textSize *= scalingFactor;
+
+	// Draw comparisons.
+	float comparisonX = canvas.GetSize().X - boxWidth;
+
+	Vector2F drawPos{ comparisonX, 0 };
+
+	canvas.SetPosition(drawPos);
+	canvas.SetColor(background);
+	canvas.FillBox(Vector2F{ boxWidth, textHeight * (comparisons.size() + 2.0f) });
+
+	canvas.SetColor(text);
+	canvas.SetPosition(drawPos);
+	canvas.DrawString("Sort comparisons (" + std::to_string(comparisons.size()) + ")",
+		textSize,
+		textSize);
+
+	drawPos += Vector2F{ 0, textHeight / 2 };
+
+	drawPos += Vector2F{ 0, textHeight };
+	for (const auto& comparison : comparisons) {
+		canvas.SetPosition(drawPos);
+		std::string a = comparison.first.name;
+		a.resize(12, ' ');
+		std::string b = comparison.second.name;
+		b.resize(12, ' ');
+		std::string line = a + " _?_ " + b;
+		canvas.DrawString(line, textSize, textSize);
+		drawPos += Vector2F{ 0, textHeight };
+	}
+
+	// Draw sorted vector.
+	drawPos += Vector2F{ 0, 3 * textHeight};
+	canvas.SetPosition(drawPos);
+	canvas.SetColor(background);
+	canvas.FillBox(Vector2F{ boxWidth, textHeight * (computedInfo.sortedPlayers.size() + 2) });
+
+	canvas.SetColor(text);
+	canvas.SetPosition(drawPos);
+	canvas.DrawString("Sorted player list (" + std::to_string(computedInfo.sortedPlayers.size()) + ")",
+		textSize,
+		textSize);
+
+	drawPos += Vector2F{ 0, textHeight / 2 };
+
+	for (const auto& player : computedInfo.sortedPlayers) {
+		drawPos += Vector2F{ 0, textHeight };
+		canvas.SetPosition(drawPos);
+		canvas.DrawString(player.name, textSize, textSize);
+	}
 }
