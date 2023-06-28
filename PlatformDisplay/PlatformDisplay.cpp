@@ -248,22 +248,33 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 }
 
 void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
-	// All based on a 2560x1440 screen because I'm lazy.
 	const LinearColor background{ 69, 69, 69, 169 };
 	const LinearColor text{ 255, 255, 255, 255 };
+
 	float textHeight = 28;
+	float boxWidth = 500;
+	float textSize = 2;
+
+	float scalingFactor = canvas.GetSize().Y / 1440.0;
+	boxWidth *= scalingFactor;
+	textHeight *= scalingFactor;
+	textSize *= scalingFactor;
 
 	// Draw comparisons.
-	float comparisonX = 2060;
-
-	canvas.SetPosition(Vector2F{ comparisonX,0 });
-	canvas.SetColor(background);
-	canvas.FillBox(Vector2F{ 500, textHeight * (comparisons.size() + 2.0f) });
+	float comparisonX = canvas.GetSize().X - boxWidth;
 
 	Vector2F drawPos{ comparisonX, 0 };
+
+	canvas.SetPosition(drawPos);
+	canvas.SetColor(background);
+	canvas.FillBox(Vector2F{ boxWidth, textHeight * (comparisons.size() + 2.0f) });
+
+
 	canvas.SetColor(text);
 	canvas.SetPosition(drawPos);
-	canvas.DrawString("Sort comparisons", 2, 2);
+	canvas.DrawString("Sort comparisons", textSize, textSize);
+
+	drawPos += Vector2F{ 0, textHeight / 2 };
 
 	drawPos += Vector2F{ 0, textHeight };
 	for (const auto& comparison : comparisons) {
@@ -273,7 +284,7 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 		std::string b = comparison.second.name;
 		b.resize(12, ' ');
 		std::string line = a + " _?_ " + b;
-		canvas.DrawString(line, 2, 2);
+		canvas.DrawString(line, textSize, textSize);
 		drawPos += Vector2F{ 0, textHeight };
 	}
 
@@ -281,14 +292,18 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	drawPos += Vector2F{ 0, 3 * textHeight};
 	canvas.SetPosition(drawPos);
 	canvas.SetColor(background);
-	canvas.FillBox(Vector2F{ 500, textHeight * (computedInfo.sortedPlayers.size() + 2) });
+	canvas.FillBox(Vector2F{ boxWidth, textHeight * (computedInfo.sortedPlayers.size() + 2) });
+
 
 	canvas.SetColor(text);
 	canvas.SetPosition(drawPos);
-	canvas.DrawString("Sorted player list", 2, 2);
+	canvas.DrawString("Sorted player list", textSize, textSize);
+
+	drawPos += Vector2F{ 0, textHeight / 2 };
+
 	for (const auto& player : computedInfo.sortedPlayers) {
 		drawPos += Vector2F{ 0, textHeight };
 		canvas.SetPosition(drawPos);
-		canvas.DrawString(player.name, 2, 2);
+		canvas.DrawString(player.name, textSize, textSize);
 	}
 }
