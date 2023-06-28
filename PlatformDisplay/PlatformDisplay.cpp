@@ -250,15 +250,21 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	// All based on a 2560x1440 screen because I'm lazy.
 	const LinearColor background{ 69, 69, 69, 169 };
+	const LinearColor text{ 255, 255, 255, 255 };
 	float textHeight = 28;
-	// Draw comparisons
+
+	// Draw comparisons.
 	float comparisonX = 2060;
+
 	canvas.SetPosition(Vector2F{ comparisonX,0 });
 	canvas.SetColor(background);
 	canvas.FillBox(Vector2F{ 500, textHeight * (comparisons.size() + 2.0f) });
-	Vector2F drawPos{ comparisonX, textHeight };
-	canvas.SetColor({ 255,255,255,255 });
+
+	Vector2F drawPos{ comparisonX, 0 };
+	canvas.SetColor(text);
+	canvas.SetPosition(drawPos);
 	canvas.DrawString("Sort comparisons", 2, 2);
+
 	drawPos += Vector2F{ 0, textHeight };
 	for (const auto& comparison : comparisons) {
 		canvas.SetPosition(drawPos);
@@ -269,5 +275,20 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 		std::string line = a + " _?_ " + b;
 		canvas.DrawString(line, 2, 2);
 		drawPos += Vector2F{ 0, textHeight };
+	}
+
+	// Draw sorted vector.
+	drawPos += Vector2F{ 0, 3 * textHeight};
+	canvas.SetPosition(drawPos);
+	canvas.SetColor(background);
+	canvas.FillBox(Vector2F{ 500, textHeight * (computedInfo.sortedPlayers.size() + 2) });
+
+	canvas.SetColor(text);
+	canvas.SetPosition(drawPos);
+	canvas.DrawString("Sorted player list", 2, 2);
+	for (const auto& player : computedInfo.sortedPlayers) {
+		drawPos += Vector2F{ 0, textHeight };
+		canvas.SetPosition(drawPos);
+		canvas.DrawString(player.name, 2, 2);
 	}
 }
