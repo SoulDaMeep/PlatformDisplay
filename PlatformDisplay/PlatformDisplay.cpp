@@ -10,7 +10,7 @@
 
 namespace {
 
-BAKKESMOD_PLUGIN(PlatformDisplay, "write a plugin description here", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(PlatformDisplay, "Shows the platform of all the players in a game.", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::map<OnlinePlatform, int> PlatformImageMap{
 	{ OnlinePlatform_Unknown,  0 },
