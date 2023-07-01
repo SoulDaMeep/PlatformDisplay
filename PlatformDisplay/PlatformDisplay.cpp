@@ -116,7 +116,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	int numBlues{};
 	int numOranges{};
 	for (auto pri : seenPris) {
-		if (teamHistory[nameAndId(pri)] == 0) {
+		if (teamHistory[nameAndId(pri)] == BLUE_TEAM) {
 			numBlues++;
 		}
 		else {
