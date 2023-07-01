@@ -69,6 +69,13 @@ private:
 
 	// Members for scoreboard tracking logic.
 	std::vector<std::pair<Pri, Pri>> comparisons;
+	/**
+	 * teamHistory records the last team that a player (represented by the 
+	 * string combining their name and uid) was seen on. This is necessary, 
+	 * because during ScoreboardSort any disconnected players will have a team 
+	 * number different from Blue or Orange, but we still need to know which team
+	 * they show up on in the scoreboard display.
+	 */
 	std::unordered_map<std::string, int> teamHistory;
 	ComputedScoreboardInfo computedInfo{};  // Derived from comparisons and teamHistory.
 	bool accumulateComparisons{};
