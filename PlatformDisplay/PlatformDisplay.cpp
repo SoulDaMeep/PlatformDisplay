@@ -12,6 +12,9 @@ namespace {
 
 BAKKESMOD_PLUGIN(PlatformDisplay, "Shows the platform of all the players in a game.", plugin_version, PLUGINTYPE_FREEPLAY)
 
+const int BLUE_TEAM = 0;
+const int ORANGE_TEAM = 1;
+
 std::map<OnlinePlatform, int> PlatformImageMap{
 	{ OnlinePlatform_Unknown,  0 },
 	{ OnlinePlatform_Steam,  1 },
@@ -113,8 +116,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	int numBlues{};
 	int numOranges{};
 	for (auto pri : seenPris) {
-		pri.team = teamHistory[nameAndId(pri)];
-		if (pri.team == 0) {
+		if (teamHistory[nameAndId(pri)] == BLUE_TEAM) {
 			numBlues++;
 		}
 		else {
@@ -132,17 +134,17 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 		comparisons.clear();
 	}
 	SSParams* p = static_cast<SSParams*>(params);
-	if (!p) { LOG("NULL SSParams"); return; }
+	if (!p) { LOG("PlatformDisplay::RecordScorboardComparison: NULL SSParams"); return; }
 	PriWrapper a(p->PRI_A);
 	PriWrapper b(p->PRI_B);
 	comparisons.push_back({ a, b });
 	auto teamNumA = a.GetTeamNum2();
-	if (teamNumA <= 1) {
+	if (teamNumA == BLUE_TEAM || teamNumA == ORANGE_TEAM) {
 		teamHistory[nameAndId(a)] = teamNumA;
 	}
 
 	auto teamNumB = b.GetTeamNum2();
-	if (teamNumB <= 1) {
+	if (teamNumB == BLUE_TEAM || teamNumB == ORANGE_TEAM) {
 		teamHistory[nameAndId(b)] = teamNumB;
 	}
 }
@@ -221,12 +223,13 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 
 	for (auto pri : computedInfo.sortedPlayers) {
 		Vector2F drawPos{};
-		if (pri.team == 0) {
+		int team = teamHistory[nameAndId(pri)];
+		if (team == BLUE_TEAM) {
 			blues++;
 			canvas.SetColor(blueColor);
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
 		}
-		else if (pri.team == 1) {
+		else if (team == ORANGE_TEAM) {
 			oranges++;
 			canvas.SetColor(orangeColor);
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
