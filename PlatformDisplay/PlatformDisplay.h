@@ -54,6 +54,7 @@ private:
 	void RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName);
 	void RenderPlatformLogos(CanvasWrapper canvas);
 	void RenderDebugInfo(CanvasWrapper canvas);
+	void RenderDebugPri(CanvasWrapper canvas, const PlatformDisplay::Pri& pri, Vector2F iconPos);
 	void SetTeamColors(bool keepOrder = false);
 
 	void RenderSettings() override;
