@@ -44,6 +44,26 @@ std::string nameAndId(PriWrapper pri) {
 std::string nameAndId(const PlatformDisplay::Pri& p) {
 	return p.name + "|" + p.uid.GetIdString();
 }
+
+class DebugViewConstants {
+private:
+	DebugViewConstants(float textHeight_, float boxWidth_, Vector2F iconTextOffset_) :
+		textHeight(textHeight_), boxWidth(boxWidth_), iconTextOffset(iconTextOffset_) {}
+public:
+	static DebugViewConstants create(CanvasWrapper canvas, float textSize) {
+		const float scalingFactor = canvas.GetSize().Y / 1440.0;
+		return {
+			14 * textSize * scalingFactor,
+			500 * scalingFactor,
+			Vector2F{-200, 0} *scalingFactor };
+	}
+	const float textHeight{};
+	const float boxWidth{};
+	const Vector2F iconTextOffset{};
+	const LinearColor backgroundColor{ 69, 69, 69, 169 };
+	const LinearColor textColor{ 255, 255, 255, 255 };
+};
+
 } // namespace
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
@@ -239,15 +259,15 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			LOG("Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
 			continue;
 		}
-		if (pri.isBot) { continue; }
-		if (!showIconsForSteamPlayers && pri.platform == OnlinePlatform_Steam) { continue; }
 		canvas.SetPosition(drawPos);
 		std::shared_ptr<ImageWrapper> image = logoList[PlatformImageMap[pri.platform]];
 		if (!image->IsLoadedForCanvas()) {
 			LOG("Image not loaded for canvas.");
 			continue;
 		}
-		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
+		if (!pri.isBot || showIconsForSteamPlayers || pri.platform != OnlinePlatform_Steam) {
+			canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
+		}
 		if (debugView) {
 			RenderDebugPri(canvas, pri, drawPos);
 		}
@@ -255,36 +275,28 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 }
 
 void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
-	const LinearColor background{ 69, 69, 69, 169 };
-	const LinearColor text{ 255, 255, 255, 255 };
-
-	float textHeight = 28;
-	float boxWidth = 500;
 	float textSize = 2;
-
-	float scalingFactor = canvas.GetSize().Y / 1440.0;
-	boxWidth *= scalingFactor;
-	textHeight *= scalingFactor;
-	textSize *= scalingFactor;
+	auto dvc = DebugViewConstants::create(canvas, textSize);
 
 	// Draw comparisons.
-	float comparisonX = canvas.GetSize().X - boxWidth;
+	float comparisonX = canvas.GetSize().X - dvc.boxWidth;
 
 	Vector2F drawPos{ comparisonX, 0 };
+	Vector2F lineVec {0, dvc.textHeight};
 
 	canvas.SetPosition(drawPos);
-	canvas.SetColor(background);
-	canvas.FillBox(Vector2F{ boxWidth, textHeight * (comparisons.size() + 2.0f) });
+	canvas.SetColor(dvc.backgroundColor);
+	canvas.FillBox(Vector2F{ dvc.boxWidth, dvc.textHeight * (comparisons.size() + 2.0f) });
+	LOG(std::to_string(dvc.textHeight));
+	LOG(std::to_string(dvc.boxWidth));
 
-	canvas.SetColor(text);
 	canvas.SetPosition(drawPos);
+	canvas.SetColor(dvc.textColor);
 	canvas.DrawString("Sort comparisons (" + std::to_string(comparisons.size()) + ")",
 		textSize,
 		textSize);
 
-	drawPos += Vector2F{ 0, textHeight / 2 };
-
-	drawPos += Vector2F{ 0, textHeight };
+	drawPos += lineVec * 1.5;
 	for (const auto& comparison : comparisons) {
 		canvas.SetPosition(drawPos);
 		std::string a = comparison.first.name;
@@ -293,58 +305,46 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 		b.resize(12, ' ');
 		std::string line = a + " _?_ " + b;
 		canvas.DrawString(line, textSize, textSize);
-		drawPos += Vector2F{ 0, textHeight };
+		drawPos += lineVec;
 	}
 
 	// Draw sorted vector.
-	drawPos += Vector2F{ 0, 3 * textHeight};
+	drawPos += lineVec * 3;
 	canvas.SetPosition(drawPos);
-	canvas.SetColor(background);
-	canvas.FillBox(Vector2F{ boxWidth, textHeight * (computedInfo.sortedPlayers.size() + 2) });
+	canvas.SetColor(dvc.backgroundColor);
+	canvas.FillBox(Vector2F{ dvc.boxWidth, dvc.textHeight * (computedInfo.sortedPlayers.size() + 2) });
 
-	canvas.SetColor(text);
+	canvas.SetColor(dvc.textColor);
 	canvas.SetPosition(drawPos);
 	canvas.DrawString("Sorted player list (" + std::to_string(computedInfo.sortedPlayers.size()) + ")",
 		textSize,
 		textSize);
 
-	drawPos += Vector2F{ 0, textHeight / 2 };
+	drawPos += lineVec / 2;
 
 	for (const auto& player : computedInfo.sortedPlayers) {
-		drawPos += Vector2F{ 0, textHeight };
+		drawPos += lineVec;
 		canvas.SetPosition(drawPos);
 		canvas.DrawString(player.name, textSize, textSize);
 	}
 }
 
 void PlatformDisplay::RenderDebugPri(CanvasWrapper canvas, const PlatformDisplay::Pri& pri, Vector2F iconPos) {
-	const LinearColor background{ 69, 69, 69, 169 };
-	const LinearColor text{ 255, 255, 255, 255 };
-
 
 	float textSize = 1;
-	float textHeight = 14 * textSize;
-	float boxWidth = 500;
+	auto dvc = DebugViewConstants::create(canvas, textSize);
+	Vector2F textPos = iconPos + dvc.iconTextOffset;
 
-	float scalingFactor = canvas.GetSize().Y / 1440.0;
-	boxWidth *= scalingFactor;
-	textHeight *= scalingFactor;
-	textSize *= scalingFactor;
+	canvas.SetColor(dvc.textColor);
+	canvas.SetPosition(textPos);
 
-	Vector2F textPos = iconPos + Vector2F{ -200 * scalingFactor, 0 };
-	Vector2F line = { 0, textHeight };
-
-	canvas.SetColor(text);
-
-	canvas.SetPosition(textPos);
-	canvas.DrawString("Name:  " + pri.name, textSize, textSize);
-	textPos += line;
-	canvas.SetPosition(textPos);
-	canvas.DrawString("UID:   " + pri.uid.GetIdString(), textSize, textSize);
-	textPos += line;
-	canvas.SetPosition(textPos);
-	canvas.DrawString("Team:  " + std::to_string(pri.team));
-	textPos += line;
-	canvas.SetPosition(textPos);
-	canvas.DrawString("Score: " + std::to_string(pri.score));
+	auto drawLine = [&canvas, textSize, textHeight = dvc.textHeight, &textPos](std::string s) {
+		canvas.DrawString(s, textSize, textSize);
+		textPos += Vector2F{ 0, textHeight };
+		canvas.SetPosition(textPos);
+	};
+	drawLine("Name:  " + pri.name);
+	drawLine("UID:   " + pri.uid.GetIdString());
+	drawLine("Team:  " + std::to_string(pri.team));
+	drawLine("Score: " + std::to_string(pri.score));
 }
