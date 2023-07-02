@@ -52,10 +52,9 @@ private:
 public:
 	static DebugViewConstants create(CanvasWrapper canvas, float textSize) {
 		const float scalingFactor = canvas.GetSize().Y / 1440.0;
-		return {
-			14 * textSize * scalingFactor,
-			500 * scalingFactor,
-			Vector2F{-200, 0} *scalingFactor };
+		return { 14 * textSize * scalingFactor,
+				 500 * scalingFactor,
+				 Vector2F{-200, 0} *scalingFactor };
 	}
 	const float textHeight{};
 	const float boxWidth{};
@@ -265,7 +264,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			LOG("Image not loaded for canvas.");
 			continue;
 		}
-		if (!pri.isBot || showIconsForSteamPlayers || pri.platform != OnlinePlatform_Steam) {
+		if (!pri.isBot && (showIconsForSteamPlayers || pri.platform != OnlinePlatform_Steam)) {
 			canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
 		}
 		if (debugView) {
