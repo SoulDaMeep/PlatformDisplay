@@ -180,7 +180,8 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 	if (sw.GetbMatchEnded()) { return; }
 
 	CVarWrapper debugCvar = cvarManager->getCvar("PlatformDisplay_DebugView");
-	if (debugCvar && debugCvar.getBoolValue()) {
+	bool debugView = debugCvar && debugCvar.getBoolValue();
+	if (debugView) {
 		RenderDebugInfo(canvas);
 	}
 
@@ -247,6 +248,9 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			continue;
 		}
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
+		if (debugView) {
+			RenderDebugPri(canvas, pri, drawPos);
+		}
 	}
 }
 
@@ -311,4 +315,36 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 		canvas.SetPosition(drawPos);
 		canvas.DrawString(player.name, textSize, textSize);
 	}
+}
+
+void PlatformDisplay::RenderDebugPri(CanvasWrapper canvas, const PlatformDisplay::Pri& pri, Vector2F iconPos) {
+	const LinearColor background{ 69, 69, 69, 169 };
+	const LinearColor text{ 255, 255, 255, 255 };
+
+
+	float textSize = 1;
+	float textHeight = 14 * textSize;
+	float boxWidth = 500;
+
+	float scalingFactor = canvas.GetSize().Y / 1440.0;
+	boxWidth *= scalingFactor;
+	textHeight *= scalingFactor;
+	textSize *= scalingFactor;
+
+	Vector2F textPos = iconPos + Vector2F{ -200 * scalingFactor, 0 };
+	Vector2F line = { 0, textHeight };
+
+	canvas.SetColor(text);
+
+	canvas.SetPosition(textPos);
+	canvas.DrawString("Name:  " + pri.name, textSize, textSize);
+	textPos += line;
+	canvas.SetPosition(textPos);
+	canvas.DrawString("UID:   " + pri.uid.GetIdString(), textSize, textSize);
+	textPos += line;
+	canvas.SetPosition(textPos);
+	canvas.DrawString("Team:  " + std::to_string(pri.team));
+	textPos += line;
+	canvas.SetPosition(textPos);
+	canvas.DrawString("Score: " + std::to_string(pri.score));
 }
