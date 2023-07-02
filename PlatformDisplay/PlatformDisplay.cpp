@@ -286,8 +286,6 @@ void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	canvas.SetPosition(drawPos);
 	canvas.SetColor(dvc.backgroundColor);
 	canvas.FillBox(Vector2F{ dvc.boxWidth, dvc.textHeight * (comparisons.size() + 2.0f) });
-	LOG(std::to_string(dvc.textHeight));
-	LOG(std::to_string(dvc.boxWidth));
 
 	canvas.SetPosition(drawPos);
 	canvas.SetColor(dvc.textColor);
