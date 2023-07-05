@@ -2,6 +2,9 @@
 
 plugin id: 376 
 
+# if there is any bugs or issues, please msg me on discord: @souldameep
+
+
 Big thanks to the team that helped and supported the making of this plugin:
 
 > Images gathered and edited by Swan \
