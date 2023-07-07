@@ -5,7 +5,7 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
 #include "version.h"
-
+#include <set>
 #include <map>
 #include <string>
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
@@ -56,7 +56,7 @@ private:
 	void RenderDebugInfo(CanvasWrapper canvas);
 	void RenderDebugPri(CanvasWrapper canvas, const PlatformDisplay::Pri& pri, Vector2F iconPos);
 	void SetTeamColors(bool keepOrder = false);
-
+	std::set<std::string> disconnectedPris;
 	void RenderSettings() override;
 	std::string GetPluginName() override;
 	virtual void Render() override;

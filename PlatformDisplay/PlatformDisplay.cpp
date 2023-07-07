@@ -7,7 +7,7 @@
 #include <map>
 #include <iostream>
 #include <unordered_set>
-
+#include <set>
 namespace {
 
 BAKKESMOD_PLUGIN(PlatformDisplay, "Shows the platform of all the players in a game.", plugin_version, PLUGINTYPE_FREEPLAY)
@@ -111,6 +111,7 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		comparisons.clear();
 		ComputeScoreboardInfo();
+		disconnectedPris.clear();
 	});
 
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
@@ -135,6 +136,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	int numBlues{};
 	int numOranges{};
 	for (auto pri : seenPris) {
+		if(pri.team > 1) disconnectedPris.insert(nameAndId(pri));
 		if (teamHistory[nameAndId(pri)] == BLUE_TEAM) {
 			numBlues++;
 		}
@@ -151,6 +153,7 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 	if (!accumulateComparisons) {
 		accumulateComparisons = true;
 		comparisons.clear();
+		disconnectedPris.clear();
 	}
 	SSParams* p = static_cast<SSParams*>(params);
 	if (!p) { LOG("PlatformDisplay::RecordScorboardComparison: NULL SSParams"); return; }
@@ -247,11 +250,13 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		if (team == BLUE_TEAM) {
 			blues++;
 			canvas.SetColor(blueColor);
+			if(disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor {blueColor.R, blueColor.G, blueColor.B, 155/1.5});
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
 		}
 		else if (team == ORANGE_TEAM) {
 			oranges++;
 			canvas.SetColor(orangeColor);
+			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
 		}
 		else {
