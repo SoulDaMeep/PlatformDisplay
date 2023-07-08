@@ -34,7 +34,7 @@ struct SSParams {
 	uintptr_t PRI_B;
 
 	// if hooking post
-	int32_t ReturnValue;
+	int32_t ReturnValue; // believed to not work or something 
 };
 
 std::string nameAndId(PriWrapper pri) {
@@ -63,6 +63,8 @@ public:
 	const LinearColor textColor{ 255, 255, 255, 255 };
 };
 
+
+// please msg what this does
 } // namespace
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
@@ -71,21 +73,24 @@ void PlatformDisplay::onLoad()
 {
 	_globalCvarManager = cvarManager;
 
+	//load all the images
 	for (int i = 0; i < LOGO_COUNT; i++) {
 		logos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + ".png"), false, false);
 		logos[i]->LoadForCanvas();
 	}
+	
 	for (int i = 0; i < LOGO_COUNT; i++) {
 		noTintLogos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + "-no-tint.png"), false, false);
 		noTintLogos[i]->LoadForCanvas();
 	}
-
+	//load register cvars
 	cvarManager->registerCvar("PlatformDisplay_OverrideTints", "0", "Override the autotinting of the platform icons");
 	cvarManager->registerCvar("PlatformDisplay_Enabled", "1", "Enable the plugin");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerBlueTeam", "#FFFFFF", "Changes the color of the text for Blue team");
 	cvarManager->registerCvar("PlatformDisplay_ColorPickerOrangeTeam", "#FFFFFF", "Changes the color of the text for Orange Team");
 	cvarManager->registerCvar("PlatformDisplay_SteamPlayer", "0", "Show/hide icons for steam players");
 	cvarManager->registerCvar("PlatformDisplay_DebugView", "0", "Show/hide debug view");
+
 
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
 		SetTeamColors();
@@ -94,7 +99,7 @@ void PlatformDisplay::onLoad()
 		SetTeamColors();
 	});
 	gameWrapper->HookEventWithCaller<ActorWrapper>(
-		"Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", 
+		"Function TAGame.GameEvent_Soccar_TA.ScoreboardSort", // gives us all the players that would be seen on the scoreboard disconnected or not
 		[this](ActorWrapper gameEvent, void* params, std::string eventName) {
 		  RecordScoreboardComparison(gameEvent, params, eventName);
 	});
@@ -108,12 +113,13 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnCloseScoreboard", [this](...) {
 		scoreBoardOpen = false;
 	});
+	//clear all the lists so that its ready for next game
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		comparisons.clear();
 		ComputeScoreboardInfo();
 		disconnectedPris.clear();
 	});
-
+	//me when RegisterDrawable
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		RenderPlatformLogos(canvas);
 	});
@@ -125,31 +131,41 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	}
 	accumulateComparisons = false;
 
+	// ganna need likebook to tell me what this does lol
 	auto hash = [](const Pri& p) { return std::hash<std::string>{}(nameAndId(p)); };
 	auto keyEqual = [](const Pri& lhs, const Pri& rhs) { return nameAndId(lhs) == nameAndId(rhs); };
+
 	std::unordered_set<Pri, decltype(hash), decltype(keyEqual)> seenPris{10, hash, keyEqual};
+
+	//add the 2 players being compared
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
 	}
+
 	std::vector<Pri> seenPrisVector;
 	int numBlues{};
 	int numOranges{};
 	for (auto pri : seenPris) {
+		// >1 = disconected so we add it to the disconnected pris to check later
 		if(pri.team > 1) disconnectedPris.insert(nameAndId(pri));
+		//gets amount of players on each team
 		if (teamHistory[nameAndId(pri)] == BLUE_TEAM) {
 			numBlues++;
 		}
 		else {
 			numOranges++;
 		}
+		//adds the pri
 		seenPrisVector.push_back(pri);
 	}
+	//sorts based on score
 	std::sort(seenPrisVector.begin(), seenPrisVector.end(), [](const Pri& a, const Pri& b) { return a.score > b.score; });
 	computedInfo = ComputedScoreboardInfo{seenPrisVector, numBlues, numOranges};
 }
 
 void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName) {
+	//after every comparison
 	if (!accumulateComparisons) {
 		accumulateComparisons = true;
 		comparisons.clear();
@@ -159,8 +175,9 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 	if (!p) { LOG("PlatformDisplay::RecordScorboardComparison: NULL SSParams"); return; }
 	PriWrapper a(p->PRI_A);
 	PriWrapper b(p->PRI_B);
+	//add the comparisons pris
 	comparisons.push_back({ a, b });
-	auto teamNumA = a.GetTeamNum2();
+	auto teamNumA = a.GetTeamNum2(); 
 	if (teamNumA == BLUE_TEAM || teamNumA == ORANGE_TEAM) {
 		teamHistory[nameAndId(a)] = teamNumA;
 	}
@@ -189,6 +206,7 @@ void PlatformDisplay::SetTeamColors(bool keepOrder) {
 		if (team.GetTeamNum2() < 0 || team.GetTeamNum2() > 1) {
 			continue;
 		}
+		//set the colors 
 		LinearColor unscaledColor = team.GetPrimaryColor();
 		teamColors[team.GetTeamNum2()] = unscaledColor * 255.0f;
 		LOG("Got {}, {}, {}, {} for {} color", teamColors[team.GetTeamNum2()].R, teamColors[team.GetTeamNum2()].G, teamColors[team.GetTeamNum2()].B, teamColors[team.GetTeamNum2()].A, team.GetTeamNum2());
@@ -219,6 +237,8 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 	LinearColor blueColor = teamColors[0];
 	LinearColor orangeColor = teamColors[1];
 	CVarWrapper overrideTintCvar = cvarManager->getCvar("PlatformDisplay_OverrideTints");
+
+	//set final color type
 	int overrideTint = overrideTintCvar ? overrideTintCvar.getIntValue() : 0;
 	if (overrideTint == 1) {
 		blueColor = { 255, 255, 255, 155 };
@@ -250,12 +270,15 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		if (team == BLUE_TEAM) {
 			blues++;
 			canvas.SetColor(blueColor);
+			//if the user is dicosnnected (team is >1) make it transparent like rocketleague does
 			if(disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor {blueColor.R, blueColor.G, blueColor.B, 155/1.5});
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
 		}
 		else if (team == ORANGE_TEAM) {
 			oranges++;
 			canvas.SetColor(orangeColor);
+			//if the user is dicosnnected (team is >1) make it transparent like rocketleague does
+
 			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
 		}
@@ -269,6 +292,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			LOG("Image not loaded for canvas.");
 			continue;
 		}
+		//draw the thingy :>
 		if (!pri.isBot && (showIconsForSteamPlayers || pri.platform != OnlinePlatform_Steam)) {
 			canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48
 		}
@@ -277,7 +301,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		}
 	}
 }
-
+//Debug and eat cheese
 void PlatformDisplay::RenderDebugInfo(CanvasWrapper canvas) {
 	float textSize = 2;
 	auto dvc = DebugViewConstants::create(canvas, textSize);
