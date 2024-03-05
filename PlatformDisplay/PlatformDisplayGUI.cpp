@@ -29,12 +29,13 @@ void PlatformDisplay::RenderSettings() {
 	bool enabled = enabledCvar.getBoolValue();
 
 	CVarWrapper steamPlayerCvar = cvarManager->getCvar("PlatformDisplay_SteamPlayer");
-	if(!steamPlayerCvar) { return; }
+	CVarWrapper AlphaConsoleCvar = cvarManager->getCvar("PlatformDisplay_AlphaConsole");
+	if(!AlphaConsoleCvar) {return;}
+	if (!steamPlayerCvar) { return; }
 	bool steamPlayer = steamPlayerCvar.getBoolValue();
 	if (ImGui::Checkbox("Enable plugin", &enabled)) {
 		enabledCvar.setValue(enabled);
 	}
-
 	CVarWrapper overrideTintCvar = cvarManager->getCvar("PlatformDisplay_OverrideTints");
 	if (!overrideTintCvar) { return; }
 	int doOverride = overrideTintCvar.getIntValue();
@@ -55,6 +56,10 @@ void PlatformDisplay::RenderSettings() {
 		if (ImGui::ColorEdit4("Orange Color", &textColorOrange.R)) {
 			colorpickerorange.setValue(textColorOrange * 255);
 		}
+	}
+	bool AlphaConsole = AlphaConsoleCvar.getBoolValue();
+	if (ImGui::Checkbox("Hide your icon", &AlphaConsole)) {
+		AlphaConsoleCvar.setValue(AlphaConsole);
 	}
 }
 
@@ -112,4 +117,3 @@ void PlatformDisplay::OnClose()
 {
 	windowOpen = false;
 }
-
