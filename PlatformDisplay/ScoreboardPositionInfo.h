@@ -15,6 +15,7 @@
 #define IMBALANCE_SHIFT 32
 #define MUTATOR_SIZE 478
 #define SKIP_TICK_SHIFT 67
+#define Y_OFFCENTER_OFFSET 42
 
 // Scoreboard Position Info: 
 struct SbPosInfo {
@@ -34,7 +35,7 @@ SbPosInfo getSbPosInfo(Vector2F canvasSize, float uiScale, bool mutators, int nu
 		scale = 0.615f * canvasSize.X / SCOREBOARD_WIDTH;
 	}
 
-	Vector2F center = Vector2F{ canvasSize.X / 2, canvasSize.Y / 2 };
+	Vector2F center = Vector2F{ canvasSize.X / 2, canvasSize.Y / 2 + +Y_OFFCENTER_OFFSET * scale * uiScale };
 	float mutators_center = canvasSize.X - 1005.0f * scale * uiScale;
 	if (mutators && mutators_center < center.X) {
 		center.X = mutators_center;
