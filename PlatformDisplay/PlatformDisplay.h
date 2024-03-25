@@ -32,7 +32,7 @@ public:
 			isBot = p.GetbBot();
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
-			ghost_player = false;
+			ghost_player = team > 1;
 		}
 	};
 private:

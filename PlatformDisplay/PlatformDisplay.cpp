@@ -106,7 +106,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	auto hash = [](const Pri& p) { return std::hash<std::string>{}(nameAndId(p)); };
 	auto keyEqual = [](const Pri& lhs, const Pri& rhs) { return nameAndId(lhs) == nameAndId(rhs); };
 	std::unordered_set<Pri, decltype(hash), decltype(keyEqual)> seenPris{ 10, hash, keyEqual };
-
+	disconnectedPris.clear();
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
