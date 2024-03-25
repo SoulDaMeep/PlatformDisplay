@@ -21,6 +21,7 @@ public:
 		bool isBot{};
 		std::string name;
 		OnlinePlatform platform;
+		bool ghost_player;
 
 		Pri() {}
 		Pri(PriWrapper p) {
@@ -31,6 +32,7 @@ public:
 			isBot = p.GetbBot();
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
+			ghost_player = false;
 		}
 	};
 private:

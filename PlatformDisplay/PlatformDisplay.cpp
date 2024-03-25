@@ -67,33 +67,34 @@ void PlatformDisplay::onLoad()
 
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
 		SetTeamColors();
-		});
+	});
 	gameWrapper->HookEvent("Function TAGame.GameEvent_TA.AddCar", [this](std::string eventName) {
 		SetTeamColors();
-		});
+	});
 	gameWrapper->HookEventWithCaller<ActorWrapper>(
 		"Function TAGame.GameEvent_Soccar_TA.ScoreboardSort",
 		[this](ActorWrapper gameEvent, void* params, std::string eventName) {
 			RecordScoreboardComparison(gameEvent, params, eventName);
-		});
+	});
 	gameWrapper->HookEventWithCaller<ActorWrapper>(
 		"Function TAGame.PRI_TA.GetScoreboardStats",
 		[this](auto args...) { ComputeScoreboardInfo();
-		});
+	});
 	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnOpenScoreboard", [this](...) {
 		scoreBoardOpen = true;
-		});
+	});
 	gameWrapper->HookEvent("Function TAGame.GFxData_GameEvent_TA.OnCloseScoreboard", [this](...) {
 		scoreBoardOpen = false;
-		});
+	});
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		comparisons.clear();
+		disconnectedPris.clear();
 		ComputeScoreboardInfo();
-		});
+	});
 
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
 		RenderPlatformLogos(canvas);
-		});
+	});
 }
 
 void PlatformDisplay::ComputeScoreboardInfo() {
@@ -105,15 +106,27 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	auto hash = [](const Pri& p) { return std::hash<std::string>{}(nameAndId(p)); };
 	auto keyEqual = [](const Pri& lhs, const Pri& rhs) { return nameAndId(lhs) == nameAndId(rhs); };
 	std::unordered_set<Pri, decltype(hash), decltype(keyEqual)> seenPris{ 10, hash, keyEqual };
+
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
+		if (comparison.first.ghost_player) {
+			disconnectedPris.insert(nameAndId(comparison.first));
+		}
+		if (comparison.second.ghost_player) {
+			disconnectedPris.insert(nameAndId(comparison.second));
+		}
 	}
+
 	std::vector<Pri> seenPrisVector;
 	int numBlues{};
 	int numOranges{};
 	for (auto pri : seenPris) {
 		pri.team = teamHistory[nameAndId(pri)];
+		if (pri.team > 1) disconnectedPris.insert(nameAndId(pri));
+		if(disconnectedPris.find(nameAndId(pri)) != disconnectedPris.end()) {
+			pri.ghost_player = true;
+		}
 		if (pri.team == 0) {
 			numBlues++;
 		}
@@ -216,14 +229,14 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		Vector2F drawPos{};
 		if (pri.team == 0) {
 			blues++;
-			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, blueColor.B, 155 / 1.5 });
-			else canvas.SetColor(blueColor);
+			canvas.SetColor(blueColor);
+			if (pri.ghost_player) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, blueColor.B, 155 / 2 });
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
 		}
 		else if (pri.team == 1) {
 			oranges++;
-			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
-			else canvas.SetColor(orangeColor);
+			canvas.SetColor(orangeColor);
+			if (pri.ghost_player) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 2 });
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
 		}
 		else {
