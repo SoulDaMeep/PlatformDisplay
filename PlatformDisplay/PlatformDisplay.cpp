@@ -106,10 +106,12 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	auto hash = [](const Pri& p) { return std::hash<std::string>{}(nameAndId(p)); };
 	auto keyEqual = [](const Pri& lhs, const Pri& rhs) { return nameAndId(lhs) == nameAndId(rhs); };
 	std::unordered_set<Pri, decltype(hash), decltype(keyEqual)> seenPris{ 10, hash, keyEqual };
+	// make sure it still shows when they rejoin
 	disconnectedPris.clear();
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
+
 		if (comparison.first.ghost_player) {
 			disconnectedPris.insert(nameAndId(comparison.first));
 		}
@@ -123,10 +125,12 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	int numOranges{};
 	for (auto pri : seenPris) {
 		pri.team = teamHistory[nameAndId(pri)];
+
 		if (pri.team > 1) disconnectedPris.insert(nameAndId(pri));
 		if(disconnectedPris.find(nameAndId(pri)) != disconnectedPris.end()) {
 			pri.ghost_player = true;
 		}
+
 		if (pri.team == 0) {
 			numBlues++;
 		}

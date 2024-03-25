@@ -32,6 +32,7 @@ public:
 			isBot = p.GetbBot();
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
+			// BenTheDan Implementation
 			ghost_player = team > 1;
 		}
 	};
