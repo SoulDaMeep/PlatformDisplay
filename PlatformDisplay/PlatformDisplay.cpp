@@ -217,11 +217,14 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		if (pri.team == 0) {
 			blues++;
 			canvas.SetColor(blueColor);
+			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, 
+			blueColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
 		}
 		else if (pri.team == 1) {
 			oranges++;
 			canvas.SetColor(orangeColor);
+			if (disconnectedPris.count(nameAndId(pri)) > 0) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
 		}
 		else {
