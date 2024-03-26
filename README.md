@@ -2,7 +2,6 @@
 
 plugin id: 376 
 
-# if there is any bugs or issues, please msg me on discord: @souldameep
 
 Big thanks to the team that helped and supported the making of this plugin:
 
@@ -11,8 +10,8 @@ Big thanks to the team that helped and supported the making of this plugin:
 > Implementation of scoreboard images by Rivques \
 > Implementation of "Ghost Players" and refactoring by LikeBook
 
-## "Ghost Players"
-Fixed.
+## "Ghost Players" / Start of game sorting
+Both fixed.
+Please contact me if you would like to learn how we fixed this issues.
 
-## Start of game sorting
-Fixed.
+# if there is any bugs or issues, please message me on discord: @souldameep
