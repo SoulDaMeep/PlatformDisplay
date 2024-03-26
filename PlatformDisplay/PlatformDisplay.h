@@ -36,6 +36,12 @@ public:
 			ghost_player = team > 1;
 		}
 	};
+
+	struct ScoreboardObj
+	{
+		unsigned char pad[0xB0];
+		wchar_t* sorted_names;
+	};
 private:
 	/**
 	 * Stores data derived from each scoreboard sort cycle (happens once every second).
@@ -70,8 +76,11 @@ private:
 	virtual bool IsActiveOverlay() override;
 	virtual void OnOpen() override;
 	virtual void OnClose() override;
+	void getSortedIds(ActorWrapper caller);
+	bool sortPris(Pri a, Pri b);
 
 	// Members for scoreboard tracking logic.
+	std::string sortedIds = "";
 	std::vector<std::pair<Pri, Pri>> comparisons;
 	/**
 	 * teamHistory records the last team that a player (represented by the 
