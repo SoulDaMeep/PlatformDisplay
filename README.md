@@ -13,7 +13,6 @@ Big thanks to the team that helped and supported the making of this plugin:
 
 ## "Ghost Players"
 Fixed.
-More information [here](PlatformDisplay/GhostPlayers.md)
 
 ## Start of game sorting
 Fixed.
