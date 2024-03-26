@@ -12,6 +12,6 @@ Big thanks to the team that helped and supported the making of this plugin:
 
 ## "Ghost Players" / Start of game sorting
 Both fixed.
-Please contact me if you would like to learn how we fixed this issues.
+Please contact me if you would like to learn how we fixed these issues.
 
 # if there is any bugs or issues, please message me on discord: @souldameep
