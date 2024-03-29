@@ -67,6 +67,7 @@ void PlatformDisplay::onLoad()
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>("Function TAGame.GFxData_Scoreboard_TA.UpdateSortedPlayerIDs", [this](ActorWrapper caller, ...) {
 		getSortedIds(caller);
+		// Some gamemodes have different hooks (potentially dangerous)
 		ComputeScoreboardInfo();
 	});
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
@@ -93,6 +94,8 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		comparisons.clear();
 		disconnectedPris.clear();
+		ComputeScoreboardInfo();
+		// reset the list so "old data" doesnt leak into other gamemodes
 	});
 
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
