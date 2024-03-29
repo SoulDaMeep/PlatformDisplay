@@ -67,6 +67,7 @@ void PlatformDisplay::onLoad()
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>("Function TAGame.GFxData_Scoreboard_TA.UpdateSortedPlayerIDs", [this](ActorWrapper caller, ...) {
 		getSortedIds(caller);
+		ComputeScoreboardInfo();
 	});
 	gameWrapper->HookEvent("Function GameEvent_Soccar_TA.Countdown.BeginState", [this](std::string eventName) {
 		SetTeamColors();
@@ -92,7 +93,6 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		comparisons.clear();
 		disconnectedPris.clear();
-		ComputeScoreboardInfo();
 	});
 
 	gameWrapper->RegisterDrawable([this](CanvasWrapper canvas) {
@@ -263,7 +263,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
 		computedInfo.bluePlayerCount,
 		computedInfo.orangePlayerCount);
-
+	LOG("{}", mmrWrapper.GetCurrentPlaylist());
 	int blues = -1;
 	int oranges = -1;
 
