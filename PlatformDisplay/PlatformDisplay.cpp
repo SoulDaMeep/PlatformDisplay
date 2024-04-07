@@ -257,12 +257,12 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		orangeColor = orangeColorPicker ? orangeColorPicker.getColorValue() : orangeColor;
 	}
 	auto logoList = overrideTint == 1 ? noTintLogos : logos;
-
+	
 	MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 	Vector2 screenSize = gameWrapper->GetScreenSize();
 	Vector2F screenSizeFloat{ screenSize.X, screenSize.Y };
 	SbPosInfo sbPosInfo = getSbPosInfo(screenSizeFloat,
-		gameWrapper->GetDisplayScale(),
+		gameWrapper->GetDisplayScale() * gameWrapper->GetInterfaceScale(),
 		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
 		computedInfo.bluePlayerCount,
 		computedInfo.orangePlayerCount);
