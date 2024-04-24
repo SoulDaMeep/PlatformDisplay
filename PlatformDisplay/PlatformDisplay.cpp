@@ -266,7 +266,6 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
 		computedInfo.bluePlayerCount,
 		computedInfo.orangePlayerCount);
-	LOG("{}", mmrWrapper.GetCurrentPlaylist());
 	int blues = -1;
 	int oranges = -1;
 
@@ -285,7 +284,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
 		}
 		else {
-			LOG("Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
+			LOG("[PlatformDisplay] Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
 			continue;
 		}
 		if (pri.isBot) { continue; }
@@ -303,6 +302,3 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48		
 	}
 }
-// show steam pfp yes
-// on steam no
-// true
