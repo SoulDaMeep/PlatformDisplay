@@ -296,7 +296,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		canvas.SetPosition(drawPos);
 		std::shared_ptr<ImageWrapper> image = logoList[PlatformImageMap[pri.platform]];
 		if (!image->IsLoadedForCanvas()) {
-			LOG("Image not loaded for canvas.");
+			LOG("[PlatformDisplay] Image not loaded for canvas.");
 			continue;
 		}
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48		
