@@ -92,6 +92,9 @@ void PlatformDisplay::onLoad()
 		scoreBoardOpen = false;
 	});
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
+		//close scorebaord at end of game instance
+		scoreBoardOpen = false;
+		
 		comparisons.clear();
 		disconnectedPris.clear();
 		ComputeScoreboardInfo();
