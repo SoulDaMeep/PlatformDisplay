@@ -15,7 +15,7 @@
 #define IMBALANCE_SHIFT 32
 #define MUTATOR_SIZE 478
 #define SKIP_TICK_SHIFT 67
-#define Y_OFFCENTER_OFFSET 42
+#define Y_OFFCENTER_OFFSET 32
 
 // Scoreboard Position Info: 
 struct SbPosInfo {
@@ -52,7 +52,9 @@ SbPosInfo getSbPosInfo(Vector2F canvasSize, float uiScale, bool mutators, int nu
 	float tier_Y_orange = ORANGE_TOP;
 	tier_Y_orange = center.Y + tier_Y_orange * scale * uiScale;
 	output.blueLeaderPos = { tier_X, tier_Y_blue };
-	output.orangeLeaderPos = { tier_X, tier_Y_orange };
+	// blue moved up 10 and and orange slides down 9 ?????????
+	// bro what is psyonix doing.... -Soul
+	output.orangeLeaderPos = { tier_X, tier_Y_orange + 9 * scale * uiScale };
 	output.playerSeparation = BANNER_DISTANCE * scale * uiScale;
 	output.profileScale *= scale * uiScale;
 
