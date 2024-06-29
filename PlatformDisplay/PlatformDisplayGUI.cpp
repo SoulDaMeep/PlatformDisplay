@@ -165,22 +165,22 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "Contributors");
 
 			ImGui::NextColumn();
-			ImGui::SetColumnWidth(1, 250);
+			ImGui::SetColumnWidth(1, 255);
 
 			ImGui::Text("      LikeBook ");
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
 			ImGui::Text(" Rivques ");
+			if (ImGui::IsItemHovered()) {
+				ImGui::BeginTooltip();
+				ImGui::Text("Discord: @rivques");
+				ImGui::EndTooltip();
+			}
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
 			ImGui::TextColored(ImVec4{ 170.0f/255.0f, 92.0f/255.0f, 19.0f/255.0f, 1.0f }, " BenTheDan ");
-			if (ImGui::IsItemHovered()) {
-				ImGui::BeginTooltip();
-				ImGui::Text("InGameRank");
-				ImGui::EndTooltip();
-			}
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
@@ -211,6 +211,7 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::Spacing();
 			ImGui::Spacing();
 			ImGui::Spacing();
+
 			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "For ");
 			ImGui::SameLine();
 			ImGui::Text("the Community, ");
