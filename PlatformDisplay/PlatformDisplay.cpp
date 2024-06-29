@@ -44,26 +44,48 @@ namespace {
 } // namespace
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
-
+void PlatformDisplay::DefaultSettings() {
+	auto file = std::ofstream(saveFile);
+	settings.Enabled = true;
+	settings.AlphaConsole = false;
+	settings.selected = 2;
+	settings.SteamPlayer = false;
+	if (file.is_open()) {
+		WriteSettings();
+	}
+	file.close();
+}
 void PlatformDisplay::onLoad()
 {
 	_globalCvarManager = cvarManager;
+	if (!std::filesystem::exists(saveFile)) {
+		std::filesystem::create_directories(saveFile.parent_path());
+		DefaultSettings();
+	}
+	UserIcon = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / "UserIcon.png", false, false);
+	UserIcon->LoadForImGui([](bool success) {
+		if (success) LOG("[PlatformDisplay] Loaded UserIcon");
+		else LOG("[PlatformDisplay] Couldnt Load UserIcon for ImGui");
+	});
 
 	for (int i = 0; i < LOGO_COUNT; i++) {
-		logos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + ".png"), false, false);
-		logos[i]->LoadForCanvas();
+		SquareLogos.push_back(std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / "square" / (std::to_string(i) + ".png"), false, false));
+		SquareLogos.at(i)->LoadForCanvas();
 	}
 	for (int i = 0; i < LOGO_COUNT; i++) {
-		noTintLogos[i] = std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / (std::to_string(i) + "-no-tint.png"), false, false);
-		noTintLogos[i]->LoadForCanvas();
+		CircleLogos.push_back(std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / "circle" / (std::to_string(i) + ".png"), false, false));
+		CircleLogos.at(i)->LoadForCanvas();
 	}
+	for (int i = 0; i < LOGO_COUNT; i++) {
+		FullLogos.push_back(std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / "full" / (std::to_string(i) + ".png"), false, false));
+		FullLogos.at(i)->LoadForCanvas();
+	}
+	
+	Logos.push_back(SquareLogos);
+	Logos.push_back(CircleLogos);
+	Logos.push_back(FullLogos);
 
-	cvarManager->registerCvar("PlatformDisplay_OverrideTints", "0", "Override the autotinting of the platform icons");
-	cvarManager->registerCvar("PlatformDisplay_Enabled", "1", "Enable the plugin");
-	cvarManager->registerCvar("PlatformDisplay_ColorPickerBlueTeam", "#FFFFFF", "Changes the color of the text for Blue team");
-	cvarManager->registerCvar("PlatformDisplay_ColorPickerOrangeTeam", "#FFFFFF", "Changes the color of the text for Orange Team");
-	cvarManager->registerCvar("PlatformDisplay_AlphaConsole", "0", "Hides user's icon");
-	cvarManager->registerCvar("PlatformDisplay_SteamPlayer", "0", "Show/hide icons for steam players");
+	LoadSettings();
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>("Function TAGame.GFxData_Scoreboard_TA.UpdateSortedPlayerIDs", [this](ActorWrapper caller, ...) {
 		getSortedIds(caller);
@@ -105,7 +127,23 @@ void PlatformDisplay::onLoad()
 		RenderPlatformLogos(canvas);
 	});
 }
-
+void PlatformDisplay::LoadSettings() {
+	auto file = std::ifstream(saveFile);
+	nlohmann::json json;
+	if (file.is_open()) {
+		file >> json;
+	}
+	file.close();
+	settings = json.get<Settings>();
+}
+void PlatformDisplay::WriteSettings() {
+	auto file = std::ofstream(saveFile);
+	nlohmann::json json = settings;
+	if (file.is_open()) {
+		file << json.dump(4);
+	}
+	file.close();
+}
 void PlatformDisplay::getSortedIds(ActorWrapper caller) {
 
 	auto* scoreboard = reinterpret_cast<ScoreboardObj*>(caller.memory_address);
@@ -155,7 +193,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
-
+		
 		if (comparison.first.ghost_player) {
 			disconnectedPris.insert(nameAndId(comparison.first));
 		}
@@ -175,11 +213,11 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 			pri.ghost_player = true;
 		}
 
-		if (pri.team == 0) {
-			numBlues++;
+		if (pri.team == 0 && !pri.isSpectator) {
+				numBlues++;
 		}
-		else {
-			numOranges++;
+		else if(pri.team == 1 && !pri.isSpectator) {
+				numOranges++;
 		}
 		seenPrisVector.push_back(pri);
 	}
@@ -193,9 +231,11 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 		comparisons.clear();
 	}
 	SSParams* p = static_cast<SSParams*>(params);
+	
 	if (!p) { LOG("NULL SSParams"); return; }
 	PriWrapper a(p->PRI_A);
 	PriWrapper b(p->PRI_B);
+	
 	comparisons.push_back({ a, b });
 	auto teamNumA = a.GetTeamNum2();
 	if (teamNumA <= 1) {
@@ -238,29 +278,13 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 	if (!sw) { return; }
 	if (sw.GetbMatchEnded()) { return; }
 
-	CVarWrapper enabledCvar = cvarManager->getCvar("PlatformDisplay_Enabled");
-	bool enabled = enabledCvar ? enabledCvar.getBoolValue() : false;
-	if (!enabled) { return; }
 
-	CVarWrapper steamPlayerCvar = cvarManager->getCvar("PlatformDisplay_SteamPlayer");
-	bool showIconsForSteamPlayers = steamPlayerCvar ? !steamPlayerCvar.getBoolValue() : true;
+	bool showIconsForSteamPlayers = settings.SteamPlayer;
 
 	LinearColor blueColor = teamColors[0];
 	LinearColor orangeColor = teamColors[1];
-	CVarWrapper overrideTintCvar = cvarManager->getCvar("PlatformDisplay_OverrideTints");
-	int overrideTint = overrideTintCvar ? overrideTintCvar.getIntValue() : 0;
-	if (overrideTint == 1) {
-		blueColor = { 255, 255, 255, 155 };
-		orangeColor = { 255, 255, 255, 155 };
-	}
-	else if (overrideTint == 2) {
-		CVarWrapper blueColorPicker = cvarManager->getCvar("PlatformDisplay_ColorPickerBlueTeam");
-		CVarWrapper orangeColorPicker = cvarManager->getCvar("PlatformDisplay_ColorPickerOrangeTeam");
-		blueColor = blueColorPicker ? blueColorPicker.getColorValue() : blueColor;
-		orangeColor = orangeColorPicker ? orangeColorPicker.getColorValue() : orangeColor;
-	}
-	auto logoList = overrideTint == 1 ? noTintLogos : logos;
-	
+
+	auto logoList = Logos.at(settings.selected);
 	MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 	Vector2 screenSize = gameWrapper->GetScreenSize();
 	Vector2F screenSizeFloat{ screenSize.X, screenSize.Y };
@@ -271,29 +295,46 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		computedInfo.orangePlayerCount);
 	int blues = -1;
 	int oranges = -1;
+	Vector2F imageShift = { 0, 0 };
+	switch (settings.selected) {
+	case 0:
+		imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
+		break;
+	case 1:
+		imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
+		break;
+	case 2:
+		imageShift = { 0 , 0  };
+		break;
+	}
 
 	for (auto pri : computedInfo.sortedPlayers) {
+
+		if (pri.isSpectator) continue;
+
 		Vector2F drawPos{};
+
 		if (pri.team == 0) {
 			blues++;
 			canvas.SetColor(blueColor);
 			if (pri.ghost_player) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, blueColor.B, 155 / 1.5 });
-			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues };
+			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues } + imageShift;
 		}
 		else if (pri.team == 1) {
 			oranges++;
+
 			canvas.SetColor(orangeColor);
 			if (pri.ghost_player) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
-			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges };
+			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges } + imageShift;
 		}
 		else {
 			LOG("[PlatformDisplay] Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
 			continue;
 		}
 		if (pri.isBot) { continue; }
-		CVarWrapper AlphaConsoleCvar = cvarManager->getCvar("PlatformDisplay_AlphaConsole");
-		if(!AlphaConsoleCvar) {return;}
-		bool AlphaConsole = AlphaConsoleCvar.getBoolValue();
+
+
+		bool AlphaConsole = settings.AlphaConsole;
 		if (pri.platform == OnlinePlatform_Steam && !showIconsForSteamPlayers) { continue; }
 		if (AlphaConsole && (pri.uid == gameWrapper->GetUniqueID())) {continue;}
 		canvas.SetPosition(drawPos);
