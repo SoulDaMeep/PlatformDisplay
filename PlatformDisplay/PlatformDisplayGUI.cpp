@@ -34,6 +34,7 @@ void PlatformDisplay::RenderSettings() {
 	style.Colors[ImGuiCol_Tab] = ImVec4{ 1.0f, 1.0f, 1.0f, 0.2f };
 	style.Colors[ImGuiCol_Header] = ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f };
 	style.Colors[ImGuiCol_FrameBg] = ImVec4{ 31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f };
+	
 	style.TabRounding = 2.0f;
 	style.FramePadding.x = 10.0f;
 	if (ImGui::BeginTabBar("PlatformDisplay")) {
@@ -135,11 +136,14 @@ void PlatformDisplay::RenderSettings() {
 		if (ImGui::BeginTabItem("Info")) {
 			style.FramePadding.x = 1.0f;
 			style.ItemSpacing.x = 1.0f;
-			ImGui::Text("[");
-			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "  PlatformDisplay  ");
-			ImGui::SameLine();
-			ImGui::Text(" - SoulDaMeep");
+			style.Colors[ImGuiCol_Separator] = ImVec4{ 1.0f, 1.0f, 1.0f, 0.2f };
+			ImGui::Columns(2);
+			ImGui::SetColumnWidth(0, 100);
+			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "PlatformDisplay  ");
+			ImGui::NextColumn();
+			ImGui::SetColumnWidth(0, 100);
+
+			ImGui::Text("      SoulDaMeep");
 			if (ImGui::IsItemHovered()) {
 				ImGui::BeginTooltip();
 				ImGui::Text("Discord: @souldameep");
@@ -149,22 +153,24 @@ void PlatformDisplay::RenderSettings() {
 				//ImGui::Begin("SoulDaMeep", &windowOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
 				//ImGui::End();
 			}
-			ImGui::Text("[");
-			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 212.0f / 255.0f, 88.0f / 255.0f, 87.0f / 255.0f, 1.0f }, "   Concept Artist");
+			ImGui::NextColumn();
+			ImGui::SetColumnWidth(0, 100);
+			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "Concept Artist");
 
-			ImGui::SameLine();
-			ImGui::Text("       - Kandda.");
-			ImGui::Text("[");
-			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 235.0f/255.0f, 216.0f/255.0f, 52.0f/255.0f, 1.0f }, "     Contributors");
+			ImGui::NextColumn();
+			ImGui::Text("      Kandda.");
+			ImGui::NextColumn();
+			ImGui::SetColumnWidth(0, 100);
 
-			ImGui::SameLine();
-			ImGui::Text("          - LikeBook ");
+			ImGui::TextColored(ImVec4{ 0.0f / 255.0f, 248.0f / 255.0f, 223.0f / 255.0f, 1.0f }, "Contributors");
+
+			ImGui::NextColumn();
+			ImGui::SetColumnWidth(1, 250);
+
+			ImGui::Text("      LikeBook ");
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
-
 			ImGui::Text(" Rivques ");
 			ImGui::SameLine();
 			ImGui::Text("|");
@@ -179,9 +185,10 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::Text("|");
 			ImGui::SameLine();
 			ImGui::Text(" Swan");
-			ImGui::Text("[");
-			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 85.0f/255.0f, 99.0f/255.0f, 234.0f/255.0f, 1.0f }, " Discord  ");
+
+			ImGui::Columns(0);
+
+			ImGui::TextColored(ImVec4{ 85.0f/255.0f, 99.0f/255.0f, 234.0f/255.0f, 1.0f }, "Discord ");
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 			}
@@ -191,20 +198,15 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 1.0f, 1.0f, 1.0f, 0.5f }, "  GitHub ");
+			ImGui::TextColored(ImVec4{ 1.0f, 1.0f, 1.0f, 0.5f }, " GitHub");
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 			}
 			if (ImGui::IsItemClicked()) {
 				system("Start https://github.com/SoulDaMeep/PlatformDisplay/");
 			}
-			ImGui::SameLine();
-			ImGui::Text("]");
 
 
-			ImGui::Spacing();
-			ImGui::Spacing();
-			ImGui::Spacing();
 			ImGui::Spacing();
 			ImGui::Spacing();
 			ImGui::Spacing();
