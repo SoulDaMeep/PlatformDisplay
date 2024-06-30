@@ -278,13 +278,11 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 	if (!sw) { return; }
 	if (sw.GetbMatchEnded()) { return; }
 
-
-	bool showIconsForSteamPlayers = settings.SteamPlayer;
-
 	LinearColor blueColor = teamColors[0];
 	LinearColor orangeColor = teamColors[1];
 
 	auto logoList = Logos.at(settings.selected);
+
 	MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 	Vector2 screenSize = gameWrapper->GetScreenSize();
 	Vector2F screenSizeFloat{ screenSize.X, screenSize.Y };
@@ -293,12 +291,14 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
 		computedInfo.bluePlayerCount,
 		computedInfo.orangePlayerCount);
+
 	int blues = -1;
 	int oranges = -1;
+
 	Vector2F imageShift = { 0, 0 };
 	switch (settings.selected) {
 	case 0:
-		imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
+		imageShift = { 0, 0 };
 		break;
 	case 1:
 		imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
@@ -335,14 +335,19 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 
 
 		bool AlphaConsole = settings.AlphaConsole;
-		if (pri.platform == OnlinePlatform_Steam && !showIconsForSteamPlayers) { continue; }
-		if (AlphaConsole && (pri.uid == gameWrapper->GetUniqueID())) {continue;}
-		canvas.SetPosition(drawPos);
+
+		if (pri.platform == OnlinePlatform_Steam && settings.SteamPlayer) { continue; }
+
+		if (AlphaConsole && (pri.uid == gameWrapper->GetUniqueID())) { continue; }
+
+		canvas.SetPosition(drawPos); 
+
 		std::shared_ptr<ImageWrapper> image = logoList[PlatformImageMap[pri.platform]];
 		if (!image->IsLoadedForCanvas()) {
 			LOG("[PlatformDisplay] Image not loaded for canvas.");
 			continue;
 		}
+
 		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48		
 	}
 }
