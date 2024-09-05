@@ -213,11 +213,12 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 			pri.ghost_player = true;
 		}
 
-		if (pri.team == 0 && !pri.isSpectator) {
-				numBlues++;
+		if (pri.team == 0) {
+			if(!pri.isSpectator) numBlues++;
 		}
-		else if(pri.team == 1 && !pri.isSpectator) {
-				numOranges++;
+		else if(pri.team == 1) {
+			if(!pri.isSpectator) numOranges++;
+			
 		}
 		seenPrisVector.push_back(pri);
 	}
@@ -308,6 +309,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		break;
 	}
 
+
 	for (auto pri : computedInfo.sortedPlayers) {
 
 		if (pri.isSpectator) continue;
@@ -328,7 +330,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges } + imageShift;
 		}
 		else {
-			LOG("[PlatformDisplay] Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
+			LOG("[Image] Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
 			continue;
 		}
 		if (pri.isBot) { continue; }
@@ -344,10 +346,10 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 
 		std::shared_ptr<ImageWrapper> image = logoList[PlatformImageMap[pri.platform]];
 		if (!image->IsLoadedForCanvas()) {
-			LOG("[PlatformDisplay] Image not loaded for canvas.");
+			LOG("[Image] Image not loaded for canvas.");
 			continue;
 		}
 
-		canvas.DrawTexture(image.get(), 100.0f / 48.0f * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48		
+		canvas.DrawTexture(image.get(), 100.0f / image.get()->GetSize().X * sbPosInfo.profileScale); // last bit of scale b/c imgs are 48x48		
 	}
 }
