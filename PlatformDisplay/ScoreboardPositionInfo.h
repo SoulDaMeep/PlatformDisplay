@@ -4,7 +4,7 @@
 
 #define SCOREBOARD_LEFT 537
 
-#define BLUE_BOTTOM 67 // new offsets
+#define BLUE_BOTTOM 77
 #define ORANGE_TOP 43
 
 #define BANNER_DISTANCE 57
