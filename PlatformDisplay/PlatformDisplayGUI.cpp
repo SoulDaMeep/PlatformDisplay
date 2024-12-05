@@ -224,9 +224,6 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::SameLine();
 			ImGui::Text("the Community.");
 
-
-
-
 			ImGui::EndTabItem();
 		}
 	
