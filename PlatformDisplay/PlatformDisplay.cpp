@@ -1,12 +1,12 @@
 #include "pch.h"
 
 #include "PlatformDisplay.h"
-#include "ScoreboardPositionInfo.h"
 
 #include<functional>
 #include <map>
 #include <iostream>
 #include <unordered_set>
+#include "ScoreboardPositionInfo.h"
 
 namespace {
 
@@ -41,6 +41,7 @@ namespace {
 	std::string nameAndId(const PlatformDisplay::Pri& p) {
 		return p.name + "|" + p.uid.GetIdString();
 	}
+	ScoreboardOffsets ScoreboardPos;
 } // namespace
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
@@ -86,6 +87,22 @@ void PlatformDisplay::onLoad()
 	Logos.push_back(FullLogos);
 
 	LoadSettings();
+
+
+	CurlRequest SBO_CRL;
+	SBO_CRL.url = "https://raw.githubusercontent.com/SoulDaMeep/PlatformDisplay/refs/heads/master/ScoreboardLookUp.txt";
+	HttpWrapper::SendCurlRequest(SBO_CRL, [=](int code, std::string result)
+	{
+			//LOG("[CameraPresets] Repo-Req (Pros): {}", code);
+			if (code != 200) return;
+			ScoreboardPos = ParseScoreboardOffsets(result);
+			LOG("Parsed Offsets: SCOREBOARD_LEFT = {}, BLUE_BOTTOM = {}", ScoreboardPos.SCOREBOARD_LEFT, ScoreboardPos.BLUE_BOTTOM);
+
+	});
+
+
+
+
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>("Function TAGame.GFxData_Scoreboard_TA.UpdateSortedPlayerIDs", [this](ActorWrapper caller, ...) {
 		getSortedIds(caller);
@@ -291,7 +308,7 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 		gameWrapper->GetDisplayScale() * gameWrapper->GetInterfaceScale(),
 		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
 		computedInfo.bluePlayerCount,
-		computedInfo.orangePlayerCount);
+		computedInfo.orangePlayerCount, ScoreboardPos);
 
 	int blues = -1;
 	int oranges = -1;

@@ -5,7 +5,6 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
 #include <fstream>
-
 #include "version.h"
 #include <set>
 #include <map>
@@ -13,8 +12,6 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 #include "Settings.h"
-
-
 
 class PlatformDisplay :	public BakkesMod::Plugin::BakkesModPlugin,
 	public BakkesMod::Plugin::PluginSettingsWindow,
@@ -49,6 +46,7 @@ public:
 		unsigned char pad[0xB0];
 		wchar_t* sorted_names;
 	};
+
 private:
 	/**
 	 * Stores data derived from each scoreboard sort cycle (happens once every second).
@@ -91,7 +89,6 @@ private:
 	std::string sortedIds = "";
 	std::vector<std::pair<Pri, Pri>> comparisons;
 
-
 	void LoadSettings();
 	void WriteSettings();
 	void DefaultSettings();
@@ -111,8 +108,10 @@ private:
 
 	// Members for scoreboard rendering.
 	bool scoreBoardOpen{};
+
 	LinearColor teamColors[2]{ {255, 255, 255, 255}, {255, 255, 255, 255} };
 	const static int LOGO_COUNT = 6;
+
 	std::vector<std::shared_ptr<ImageWrapper>> SquareLogos;
 	std::vector<std::shared_ptr<ImageWrapper>> CircleLogos;
 	std::vector<std::shared_ptr<ImageWrapper>> FullLogos;
