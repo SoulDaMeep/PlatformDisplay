@@ -13,6 +13,34 @@ constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_M
 
 #include "Settings.h"
 
+inline uint8_t toByte(float f)
+{
+	return static_cast<uint8_t>(std::clamp(f, 0.0f, 1.0f) * 255.0f + 0.5f);
+}
+
+inline int32_t colorToInt(const LinearColor& color)
+{
+	uint8_t a = toByte(color.A);
+	uint8_t r = toByte(color.R);
+	uint8_t g = toByte(color.G);
+	uint8_t b = toByte(color.B);
+	return (a << 24) | (r << 16) | (g << 8) | b;
+}
+inline LinearColor intToColor(int32_t value)
+{
+	uint8_t a = (value >> 24) & 0xFF;
+	uint8_t r = (value >> 16) & 0xFF;
+	uint8_t g = (value >> 8) & 0xFF;
+	uint8_t b = value & 0xFF;
+
+	return {
+		r / 255.0f,
+		g / 255.0f,
+		b / 255.0f,
+		a / 255.0f
+	};
+}
+
 class PlatformDisplay :	public BakkesMod::Plugin::BakkesModPlugin,
 	public BakkesMod::Plugin::PluginSettingsWindow,
 	public BakkesMod::Plugin::PluginWindow {

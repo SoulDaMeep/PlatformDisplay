@@ -22,7 +22,7 @@ void PlatformDisplay::RenderSettings() {
 	style.FrameRounding = 1.5f;
 	style.FramePadding = ImVec2{ 2.0f, 5.0f };
 	style.FrameBorderSize = 0.5f;
-	
+
 	style.Colors[ImGuiCol_Button] = ImVec4{ 0.0f, 193.0f / 255.0f, 173.0f / 255.0f, 1.0f };
 	style.Colors[ImGuiCol_CheckMark] = ImVec4{ 0.0f / 255.0f, 198.0f / 255.0f, 173.0f / 255.0f, 1.0f };
 
@@ -34,7 +34,8 @@ void PlatformDisplay::RenderSettings() {
 	style.Colors[ImGuiCol_Tab] = ImVec4{ 1.0f, 1.0f, 1.0f, 0.2f };
 	style.Colors[ImGuiCol_Header] = ImVec4{ 1.0f, 0.0f, 0.0f, 1.0f };
 	style.Colors[ImGuiCol_FrameBg] = ImVec4{ 31.0f / 255.0f, 31.0f / 255.0f, 31.0f / 255.0f, 1.0f };
-	
+	style.Colors[ImGuiCol_SliderGrab] = ImVec4{ 0.0f / 255.0f, 198.0f / 255.0f, 173.0f / 255.0f, 1.0f };
+	style.Colors[ImGuiCol_SliderGrabActive] = ImVec4{ 0.0f / 255.0f, 198.0f / 255.0f, 173.0f / 255.0f, 0.75f };
 	style.TabRounding = 2.0f;
 	style.FramePadding.x = 10.0f;
 	if (ImGui::BeginTabBar("PlatformDisplay")) {
@@ -49,17 +50,17 @@ void PlatformDisplay::RenderSettings() {
 				ImDrawList* drawList = ImGui::GetWindowDrawList();
 
 
-				static float size = 65.0f;
-				static float margin = 5.0f;
-				static float element_size = 7.5f;
-				static float gap = 5.0f;
-				static float rounding = 8.0f;
-				static float image_size = 40.0f;
+				const float size = 65.0f;
+				const float margin = 5.0f;
+				const float element_size = 7.5f;
+				const float gap = 5.0f;
+				float rounding = 8.0f;
+				const float image_size = 40.0f;
 
 				ImVec2 pos = ImGui::GetCursorScreenPos();
 				for (int i = 0; i < 3; i++) {
 
-					ImRect s(pos + ImVec2{size * i + (gap*i), 0}, ImVec2{pos.x + (size*i + (gap*i)) + size , pos.y + size});
+					ImRect s(pos + ImVec2{ size * i + (gap * i), 0 }, ImVec2{ pos.x + (size * i + (gap * i)) + size , pos.y + size });
 					bool sHovered = false;
 					bool sHeld = false;
 
@@ -68,7 +69,7 @@ void PlatformDisplay::RenderSettings() {
 
 
 					bool sPressed = ImGui::ButtonBehavior(s, id, &sHovered, &sHeld);
-			
+
 					ImVec4 innerColor = ImVec4{ 41.0f / 255.0f, 41.0f / 255.0f, 41.0f / 255.0f, 1.0f };
 					ImVec4 displayColor = ImVec4{ 0.0f / 255.0f, 198.0f / 255.0f, 173.0f / 255.0f, 1.0f };
 					if (sHovered) {
@@ -80,31 +81,39 @@ void PlatformDisplay::RenderSettings() {
 						}
 					}
 					if (sPressed) {
-
 						settings.selected = i;
 						WriteSettings();
 					}
-					if (i < 2) {
-						drawList->AddRectFilled(s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(innerColor), 6.0f, ImDrawCornerFlags_All);
+					// for expansion if needed in future like non tinted icons.
+					switch (i)
+					{
+						case 0:
+						case 1:
+						{
+							drawList->AddRectFilled(s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(innerColor), 6.0f, ImDrawCornerFlags_All);
 
-						ImVec2 cornerPos = ImVec2{ (s.Min.x + (size-(element_size*2) - margin)), s.Min.y + margin};
+							ImVec2 cornerPos = ImVec2{ (s.Min.x + (size - (element_size * 2) - margin)), s.Min.y + margin };
 
-						float as = size - (margin * 2);
-						float thing = margin + (as - image_size) / 2.0f;
+							float as = size - (margin * 2);
+							float thing = margin + (as - image_size) / 2.0f;
 
-						if (i == 1) rounding = 10.0f;
-						else rounding = 4.0f;
+							if (i == 1) rounding = 10.0f;
+							else rounding = 4.0f;
 
-						drawList->AddRectFilled(cornerPos, ImVec2{cornerPos.x + element_size*2, cornerPos.y + element_size*2}, ImGui::ColorConvertFloat4ToU32(displayColor), rounding, ImDrawCornerFlags_All);
+							drawList->AddRectFilled(cornerPos, ImVec2{ cornerPos.x + element_size * 2, cornerPos.y + element_size * 2 }, ImGui::ColorConvertFloat4ToU32(displayColor), rounding, ImDrawCornerFlags_All);
 
-						ImGui::SetCursorScreenPos(ImVec2{ (s.Min.x + thing) , s.Min.y + (margin * 2) + (element_size) });
-						ImGui::Image(pTex, ImVec2{ image_size, image_size }, ImVec2{0, 0}, ImVec2{1, 1}, ImVec4{1.0f, 1.0f, 1.0f, 41.0f/255.0f});
-					}
-					else {
-						drawList->AddRectFilled(s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(displayColor), 8.0f, ImDrawCornerFlags_All);
+							ImGui::SetCursorScreenPos(ImVec2{ (s.Min.x + thing) , s.Min.y + (margin * 2) + (element_size) });
+							ImGui::Image(pTex, ImVec2{ image_size, image_size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, ImVec4{ 1.0f, 1.0f, 1.0f, 41.0f / 255.0f });
+							break;
+						}
+						case 2:
+						{
+							drawList->AddRectFilled(s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(displayColor), 8.0f, ImDrawCornerFlags_All);
+							break;
+						}
 					}
 					if (settings.selected == i) {
-						drawList->AddRect(      s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(ImVec4{ 1.0f, 1.0f, 1.0f, 1.0f }), 8.0f, ImDrawCornerFlags_All, 1.0f);
+						drawList->AddRect(s.Min, s.Max, ImGui::ColorConvertFloat4ToU32(ImVec4{ 1.0f, 1.0f, 1.0f, 1.0f }), 8.0f, ImDrawCornerFlags_All, 1.0f);
 					}
 				}
 			}
@@ -115,6 +124,7 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::Text("Settings");
 			ImGui::Spacing();
 			ImGui::Indent(15.0f);
+
 			if (ImGui::Checkbox("Enable plugin", &settings.Enabled)) WriteSettings();
 
 			if (ImGui::Checkbox("Hide Steam", &settings.SteamPlayer)) WriteSettings();
@@ -130,6 +140,68 @@ void PlatformDisplay::RenderSettings() {
 				ImGui::Begin("tool", &windowOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
 				ImGui::Text("Hides your icon because...well you already know yours...\nHelpfull for people who use the Avatar feature in ACPlugin.");
 				ImGui::End();
+			}
+			if (ImGui::Checkbox("Tint Override", &settings.CustomTint))
+			{
+				WriteSettings();
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly)) {
+				ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
+				ImGui::Begin("tool", &windowOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+				ImGui::Text("Allows to tint the icon to whatever you want. Instead of club colors or default colors its this static color you chose.");
+				ImGui::End();
+			}
+			if (settings.CustomTint)
+			{
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+				ImGui::Text("Tint Colors");
+				LinearColor blue = intToColor(settings.ARGBTintBlue);
+				if (ImGui::ColorEdit4("Blue Tint", &blue.R))
+				{
+					settings.ARGBTintBlue = colorToInt(blue);
+					WriteSettings();
+				}
+				LinearColor orang = intToColor(settings.ARGBTintOrange);
+				if (ImGui::ColorEdit4("Orange Tint", &orang.R))
+				{
+					settings.ARGBTintOrange = colorToInt(orang);
+					WriteSettings();
+				}
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+			}
+			if (ImGui::Checkbox("Offset", &settings.Offset))
+			{
+				WriteSettings();
+			}
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_RectOnly)) {
+				ImGui::SetNextWindowPos(ImGui::GetCursorScreenPos());
+				ImGui::Begin("tool", &windowOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+				ImGui::Text("Offsets the image to allow for more unique positioning on the scoreboard. Good if you dont want it to interfere with 'RLProfilePictures' plugin.");
+				ImGui::End();
+			}
+			if (settings.Offset)
+			{
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
+				ImGui::Text("Offsets");
+				ImGui::Spacing();
+				// Laggy but idc no one is in their settings most of the time
+				if (ImGui::SliderFloat("OffsetX", &settings.offsetX, 0.0f, ImGui::GetIO().DisplaySize.x))
+				{
+					WriteSettings();
+				}
+				if (ImGui::SliderFloat("OffsetY", &settings.offsetY, 0.0f, 100.0f))
+				{
+					WriteSettings();
+				}
+				ImGui::Spacing();
+				ImGui::Separator();
+				ImGui::Spacing();
 			}
 			ImGui::EndTabItem();
 		}
@@ -180,7 +252,7 @@ void PlatformDisplay::RenderSettings() {
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
-			ImGui::TextColored(ImVec4{ 170.0f/255.0f, 92.0f/255.0f, 19.0f/255.0f, 1.0f }, " BenTheDan ");
+			ImGui::TextColored(ImVec4{ 170.0f / 255.0f, 92.0f / 255.0f, 19.0f / 255.0f, 1.0f }, " BenTheDan ");
 			ImGui::SameLine();
 			ImGui::Text("|");
 			ImGui::SameLine();
@@ -188,7 +260,7 @@ void PlatformDisplay::RenderSettings() {
 
 			ImGui::Columns(0);
 
-			ImGui::TextColored(ImVec4{ 85.0f/255.0f, 99.0f/255.0f, 234.0f/255.0f, 1.0f }, "Discord ");
+			ImGui::TextColored(ImVec4{ 85.0f / 255.0f, 99.0f / 255.0f, 234.0f / 255.0f, 1.0f }, "Discord ");
 			if (ImGui::IsItemHovered()) {
 				ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
 			}
@@ -226,7 +298,7 @@ void PlatformDisplay::RenderSettings() {
 
 			ImGui::EndTabItem();
 		}
-	
+
 
 		ImGui::EndTabBar();
 	}

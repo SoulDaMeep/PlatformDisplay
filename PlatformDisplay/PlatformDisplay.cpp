@@ -8,6 +8,23 @@
 #include <unordered_set>
 #include "ScoreboardPositionInfo.h"
 
+/* TODO
+	
+	Done: Add tintable icons
+	Done: Add offset for unique positioning | remove interference with RLProfilePictures
+	Done: Remove spectate bug | offset gets added in render but user not on scoreboard
+	Done: remote scoreboard offsets	
+
+	Fix Gui code (wtf was i doing)	
+	re-add non tinted colored icons
+	re-do position logic (cut away from old math)
+	re-write everything (its fine but its messy)
+
+*/
+
+
+
+
 namespace {
 
 	BAKKESMOD_PLUGIN(PlatformDisplay, "Shows the platform of all the players in a game.", plugin_version, PLUGINTYPE_FREEPLAY)
@@ -41,6 +58,7 @@ namespace {
 	std::string nameAndId(const PlatformDisplay::Pri& p) {
 		return p.name + "|" + p.uid.GetIdString();
 	}
+
 	ScoreboardOffsets ScoreboardPos;
 } // namespace
 
@@ -48,9 +66,16 @@ std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 void PlatformDisplay::DefaultSettings() {
 	auto file = std::ofstream(saveFile);
 	settings.Enabled = true;
+
+	settings.CustomTint = false;
+	settings.ARGBTintBlue = -15109121; // default blue color
+	settings.ARGBTintOrange = -3972071; // default orange color
 	settings.AlphaConsole = false;
 	settings.selected = 2;
 	settings.SteamPlayer = false;
+	settings.Offset = false;
+	settings.offsetX = 0;
+	settings.offsetY = 0;
 	if (file.is_open()) {
 		WriteSettings();
 	}
@@ -81,7 +106,7 @@ void PlatformDisplay::onLoad()
 		FullLogos.push_back(std::make_shared<ImageWrapper>(gameWrapper->GetDataFolder() / "PlatformDisplayImages" / "full" / (std::to_string(i) + ".png"), false, false));
 		FullLogos.at(i)->LoadForCanvas();
 	}
-	
+
 	Logos.push_back(SquareLogos);
 	Logos.push_back(CircleLogos);
 	Logos.push_back(FullLogos);
@@ -93,16 +118,11 @@ void PlatformDisplay::onLoad()
 	SBO_CRL.url = "https://raw.githubusercontent.com/SoulDaMeep/PlatformDisplay/refs/heads/master/ScoreboardLookUp.txt";
 	HttpWrapper::SendCurlRequest(SBO_CRL, [=](int code, std::string result)
 	{
-			//LOG("[CameraPresets] Repo-Req (Pros): {}", code);
-			if (code != 200) return;
-			ScoreboardPos = ParseScoreboardOffsets(result);
-			LOG("Parsed Offsets: SCOREBOARD_LEFT = {}, BLUE_BOTTOM = {}", ScoreboardPos.SCOREBOARD_LEFT, ScoreboardPos.BLUE_BOTTOM);
-
+		// Remotely gets offsets to scoreboard so we dont have to update 3 plugins every time they do some bitchery
+		if (code != 200) return;
+		ScoreboardPos = ParseScoreboardOffsets(result);
+		LOG("Parsed Offsets: SCOREBOARD_LEFT = {}, BLUE_BOTTOM = {}", ScoreboardPos.SCOREBOARD_LEFT, ScoreboardPos.BLUE_BOTTOM);
 	});
-
-
-
-
 
 	gameWrapper->HookEventWithCallerPost<ActorWrapper>("Function TAGame.GFxData_Scoreboard_TA.UpdateSortedPlayerIDs", [this](ActorWrapper caller, ...) {
 		getSortedIds(caller);
@@ -118,7 +138,7 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEventWithCaller<ActorWrapper>(
 		"Function TAGame.GameEvent_Soccar_TA.ScoreboardSort",
 		[this](ActorWrapper gameEvent, void* params, std::string eventName) {
-			RecordScoreboardComparison(gameEvent, params, eventName);
+		RecordScoreboardComparison(gameEvent, params, eventName);
 	});
 	gameWrapper->HookEventWithCaller<ActorWrapper>(
 		"Function TAGame.PRI_TA.GetScoreboardStats",
@@ -133,7 +153,6 @@ void PlatformDisplay::onLoad()
 	gameWrapper->HookEvent("Function TAGame.GameEvent_Soccar_TA.Destroyed", [this](...) {
 		//close scorebaord at end of game instance
 		scoreBoardOpen = false;
-		
 		comparisons.clear();
 		disconnectedPris.clear();
 		ComputeScoreboardInfo();
@@ -144,15 +163,26 @@ void PlatformDisplay::onLoad()
 		RenderPlatformLogos(canvas);
 	});
 }
+// Settings management with Nlohmann
 void PlatformDisplay::LoadSettings() {
 	auto file = std::ifstream(saveFile);
 	nlohmann::json json;
 	if (file.is_open()) {
 		file >> json;
 	}
+	// Updates the json file for users who already have it.
+	if (!json.contains("Offset"))
+	{
+		LOG("Loading Defaults");
+		DefaultSettings();
+		WriteSettings();
+	}
+
 	file.close();
 	settings = json.get<Settings>();
+	
 }
+
 void PlatformDisplay::WriteSettings() {
 	auto file = std::ofstream(saveFile);
 	nlohmann::json json = settings;
@@ -161,6 +191,7 @@ void PlatformDisplay::WriteSettings() {
 	}
 	file.close();
 }
+// 
 void PlatformDisplay::getSortedIds(ActorWrapper caller) {
 
 	auto* scoreboard = reinterpret_cast<ScoreboardObj*>(caller.memory_address);
@@ -171,7 +202,7 @@ void PlatformDisplay::getSortedIds(ActorWrapper caller) {
 	// Turn wstring into string so we can later use string.find
 	std::transform(sorted_names.begin(), sorted_names.end(), std::back_inserter(str), [](wchar_t c) {
 		return (char)c;
-		});
+	});
 	sortedIds = str;
 }
 
@@ -210,7 +241,7 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	for (const auto& comparison : comparisons) {
 		seenPris.insert(comparison.first);
 		seenPris.insert(comparison.second);
-		
+
 		if (comparison.first.ghost_player) {
 			disconnectedPris.insert(nameAndId(comparison.first));
 		}
@@ -226,16 +257,16 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 		pri.team = teamHistory[nameAndId(pri)];
 
 		if (pri.team > 1) disconnectedPris.insert(nameAndId(pri));
-		if(disconnectedPris.find(nameAndId(pri)) != disconnectedPris.end()) {
+		if (disconnectedPris.find(nameAndId(pri)) != disconnectedPris.end()) {
 			pri.ghost_player = true;
 		}
 
 		if (pri.team == 0) {
-			if(!pri.isSpectator) numBlues++;
+			if (!pri.isSpectator) numBlues++;
 		}
-		else if(pri.team == 1) {
-			if(!pri.isSpectator) numOranges++;
-			
+		else if (pri.team == 1) {
+			if (!pri.isSpectator) numOranges++;
+
 		}
 		seenPrisVector.push_back(pri);
 	}
@@ -249,31 +280,22 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 		comparisons.clear();
 	}
 	SSParams* p = static_cast<SSParams*>(params);
-	
+
 	if (!p) { LOG("NULL SSParams"); return; }
 	PriWrapper a(p->PRI_A);
 	PriWrapper b(p->PRI_B);
 	
 	comparisons.push_back({ a, b });
 	auto teamNumA = a.GetTeamNum2();
-	if (teamNumA <= 1) {
-		teamHistory[nameAndId(a)] = teamNumA;
-	}
+	teamHistory[nameAndId(a)] = teamNumA;
 
 	auto teamNumB = b.GetTeamNum2();
-	if (teamNumB <= 1) {
-		teamHistory[nameAndId(b)] = teamNumB;
-	}
+	teamHistory[nameAndId(b)] = teamNumB;
 }
 
 void PlatformDisplay::SetTeamColors(bool keepOrder) {
-#ifdef _DEBUG
-	if (!gameWrapper->IsInGame() && !gameWrapper->IsInOnlineGame() || gameWrapper->IsInFreeplay() || gameWrapper->IsInReplay()) return;
-	ServerWrapper sw = gameWrapper->IsInOnlineGame() ? gameWrapper->GetOnlineGame() : gameWrapper->GetGameEventAsServer();
-#else
 	if (!gameWrapper->IsInOnlineGame()) return;
-	ServerWrapper sw = gameWrapper->GetOnlineGame();
-#endif
+	ServerWrapper sw = gameWrapper->GetCurrentGameState();
 	if (sw.IsNull()) return;
 
 	ArrayWrapper<TeamWrapper> teams = sw.GetTeams();
@@ -298,47 +320,57 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 
 	LinearColor blueColor = teamColors[0];
 	LinearColor orangeColor = teamColors[1];
-
+	if (settings.CustomTint)
+	{
+		// to LinearColor
+		blueColor = intToColor(settings.ARGBTintBlue) * 255;
+		orangeColor = intToColor(settings.ARGBTintOrange) * 255;
+	}
 	auto logoList = Logos.at(settings.selected);
 
 	MMRWrapper mmrWrapper = gameWrapper->GetMMRWrapper();
 	Vector2 screenSize = gameWrapper->GetScreenSize();
 	Vector2F screenSizeFloat{ screenSize.X, screenSize.Y };
 	SbPosInfo sbPosInfo = getSbPosInfo(screenSizeFloat,
-		gameWrapper->GetDisplayScale() * gameWrapper->GetInterfaceScale(),
-		/* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
-		computedInfo.bluePlayerCount,
-		computedInfo.orangePlayerCount, ScoreboardPos);
+									   gameWrapper->GetDisplayScale() * gameWrapper->GetInterfaceScale(),
+									   /* mutators= */ mmrWrapper.GetCurrentPlaylist() == 34,
+									   computedInfo.bluePlayerCount,
+									   computedInfo.orangePlayerCount, ScoreboardPos);
 
 	int blues = -1;
 	int oranges = -1;
 
 	Vector2F imageShift = { 0, 0 };
 	switch (settings.selected) {
-	case 0:
-		imageShift = { 0, 0 };
-		break;
-	case 1:
-		imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
-		break;
-	case 2:
-		imageShift = { 0 , 0  };
-		break;
+		case 0:
+			imageShift = { 0, 0 };
+			break;
+		case 1:
+			imageShift = { 5 * sbPosInfo.profileScale, -5 * sbPosInfo.profileScale };
+			break;
+		case 2:
+			imageShift = { 0 , 0 };
+			break;
 	}
-
+	// shift by offset relative to scoreboard position
+	if(settings.Offset)
+		imageShift = {sbPosInfo.profileScale * settings.offsetX, sbPosInfo.profileScale * settings.offsetY};
 
 	for (auto pri : computedInfo.sortedPlayers) {
-
-		if (pri.isSpectator) continue;
+		// user is not on scoreboard
+		// is spectating or user hasnt selected team yet. (select team menu)
+		if (pri.isSpectator || pri.team == 255)
+			continue;
 
 		Vector2F drawPos{};
-
+		// blue
 		if (pri.team == 0) {
 			blues++;
 			canvas.SetColor(blueColor);
 			if (pri.ghost_player) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, blueColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues } + imageShift;
 		}
+		// orange
 		else if (pri.team == 1) {
 			oranges++;
 
@@ -346,20 +378,15 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			if (pri.ghost_player) canvas.SetColor(LinearColor{ orangeColor.R, orangeColor.G, orangeColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.orangeLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * oranges } + imageShift;
 		}
-		else {
-			LOG("[Image] Unexpected team value {} for pri {}", pri.team, nameAndId(pri));
-			continue;
-		}
 		if (pri.isBot) { continue; }
 
 
-		bool AlphaConsole = settings.AlphaConsole;
-
+		// if the users platform is steam and hide steam setting is on
 		if (pri.platform == OnlinePlatform_Steam && settings.SteamPlayer) { continue; }
+		// if alphaconsole setting is on and the current render pri is yourself.
+		if (settings.AlphaConsole && (pri.uid == gameWrapper->GetUniqueID())) { continue; }
 
-		if (AlphaConsole && (pri.uid == gameWrapper->GetUniqueID())) { continue; }
-
-		canvas.SetPosition(drawPos); 
+		canvas.SetPosition(drawPos);
 
 		std::shared_ptr<ImageWrapper> image = logoList[PlatformImageMap[pri.platform]];
 		if (!image->IsLoadedForCanvas()) {
