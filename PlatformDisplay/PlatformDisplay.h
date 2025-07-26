@@ -12,7 +12,11 @@
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
 #include "Settings.h"
-
+struct GetLastTeamIndex
+{
+	unsigned char _pad[0x07b0];
+	int32_t LastTeamIndex;
+};
 inline uint8_t toByte(float f)
 {
 	return static_cast<uint8_t>(std::clamp(f, 0.0f, 1.0f) * 255.0f + 0.5f);
@@ -50,6 +54,7 @@ public:
 		int score{};
 		unsigned char team{};
 		bool isBot{};
+		int LastTeamIndex{};
 		std::string name;
 		OnlinePlatform platform;
 		bool ghost_player;
@@ -63,7 +68,14 @@ public:
 			isBot = p.GetbBot();
 			name = p.GetPlayerName().ToString();
 			platform = p.GetPlatform();
-			isSpectator = p.IsSpectator();
+
+			// will be added shortly to bmsdk
+			LastTeamIndex = ((GetLastTeamIndex*)p.memory_address)->LastTeamIndex;
+
+			// .isSpectator is always false :/
+			// GetPawnType 0 = player 1 = spectating 
+			isSpectator = p.IsSpectator() || (p.GetPawnType() == 1);
+
 			// BenTheDan Implementation
 			ghost_player = team > 1;
 		}

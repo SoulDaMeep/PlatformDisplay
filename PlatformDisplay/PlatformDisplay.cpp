@@ -9,13 +9,13 @@
 #include "ScoreboardPositionInfo.h"
 
 /* TODO
-	
+
 	Done: Add tintable icons
 	Done: Add offset for unique positioning | remove interference with RLProfilePictures
 	Done: Remove spectate bug | offset gets added in render but user not on scoreboard
-	Done: remote scoreboard offsets	
+	Done: remote scoreboard offsets
 
-	Fix Gui code (wtf was i doing)	
+	Fix Gui code (wtf was i doing)
 	re-add non tinted colored icons
 	re-do position logic (cut away from old math)
 	re-write everything (its fine but its messy)
@@ -180,7 +180,7 @@ void PlatformDisplay::LoadSettings() {
 
 	file.close();
 	settings = json.get<Settings>();
-	
+
 }
 
 void PlatformDisplay::WriteSettings() {
@@ -253,25 +253,29 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	std::vector<Pri> seenPrisVector;
 	int numBlues{};
 	int numOranges{};
+	LOG("SeenPRIS: {}", seenPris.size());
 	for (auto pri : seenPris) {
 		pri.team = teamHistory[nameAndId(pri)];
-
-		if (pri.team > 1) disconnectedPris.insert(nameAndId(pri));
+		if (pri.team > 1) {
+			disconnectedPris.insert(nameAndId(pri));
+		}
 		if (disconnectedPris.find(nameAndId(pri)) != disconnectedPris.end()) {
 			pri.ghost_player = true;
 		}
-
+		if(pri.isSpectator || pri.LastTeamIndex == -1) continue;
 		if (pri.team == 0) {
-			if (!pri.isSpectator) numBlues++;
+			if (!pri.isSpectator || pri.ghost_player)
+				numBlues++;
 		}
 		else if (pri.team == 1) {
-			if (!pri.isSpectator) numOranges++;
-
+			if (!pri.isSpectator)
+				numOranges++;
 		}
 		seenPrisVector.push_back(pri);
 	}
 	std::sort(seenPrisVector.begin(), seenPrisVector.end(), [this](const Pri& a, const Pri& b) { return sortPris(a, b); });
 	computedInfo = ComputedScoreboardInfo{ seenPrisVector, numBlues, numOranges };
+	LOG("Blues: {} | Orange: {}", numBlues, numOranges);
 }
 
 void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName) {
@@ -284,13 +288,17 @@ void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* p
 	if (!p) { LOG("NULL SSParams"); return; }
 	PriWrapper a(p->PRI_A);
 	PriWrapper b(p->PRI_B);
-	
 	comparisons.push_back({ a, b });
+		
 	auto teamNumA = a.GetTeamNum2();
-	teamHistory[nameAndId(a)] = teamNumA;
+	if(teamNumA <= 1)
+		teamHistory[nameAndId(a)] = teamNumA;
 
 	auto teamNumB = b.GetTeamNum2();
-	teamHistory[nameAndId(b)] = teamNumB;
+	if(teamNumB <= 1)
+		teamHistory[nameAndId(b)] = teamNumB;
+
+
 }
 
 void PlatformDisplay::SetTeamColors(bool keepOrder) {
@@ -353,25 +361,23 @@ void PlatformDisplay::RenderPlatformLogos(CanvasWrapper canvas) {
 			break;
 	}
 	// shift by offset relative to scoreboard position
-	if(settings.Offset)
-		imageShift = {sbPosInfo.profileScale * settings.offsetX, sbPosInfo.profileScale * settings.offsetY};
-
+	if (settings.Offset)
+		imageShift = { sbPosInfo.profileScale * settings.offsetX, sbPosInfo.profileScale * settings.offsetY };
 	for (auto pri : computedInfo.sortedPlayers) {
 		// user is not on scoreboard
 		// is spectating or user hasnt selected team yet. (select team menu)
-		if (pri.isSpectator || pri.team == 255)
-			continue;
-
+		if(pri.LastTeamIndex == -1 || pri.isSpectator) continue;
+	
 		Vector2F drawPos{};
 		// blue
-		if (pri.team == 0) {
+		if (pri.team == 0 || (255 - pri.team) == 0) {
 			blues++;
 			canvas.SetColor(blueColor);
 			if (pri.ghost_player) canvas.SetColor(LinearColor{ blueColor.R, blueColor.G, blueColor.B, 155 / 1.5 });
 			drawPos = sbPosInfo.blueLeaderPos + Vector2F{ 0, sbPosInfo.playerSeparation * blues } + imageShift;
 		}
 		// orange
-		else if (pri.team == 1) {
+		else if (pri.team == 1 || (255 - pri.team)== 1) {
 			oranges++;
 
 			canvas.SetColor(orangeColor);
