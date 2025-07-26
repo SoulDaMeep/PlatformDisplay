@@ -253,7 +253,6 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	std::vector<Pri> seenPrisVector;
 	int numBlues{};
 	int numOranges{};
-	LOG("SeenPRIS: {}", seenPris.size());
 	for (auto pri : seenPris) {
 		pri.team = teamHistory[nameAndId(pri)];
 		if (pri.team > 1) {
