@@ -275,7 +275,6 @@ void PlatformDisplay::ComputeScoreboardInfo() {
 	}
 	std::sort(seenPrisVector.begin(), seenPrisVector.end(), [this](const Pri& a, const Pri& b) { return sortPris(a, b); });
 	computedInfo = ComputedScoreboardInfo{ seenPrisVector, numBlues, numOranges };
-	LOG("Blues: {} | Orange: {}", numBlues, numOranges);
 }
 
 void PlatformDisplay::RecordScoreboardComparison(ActorWrapper gameEvent, void* params, std::string eventName) {
